@@ -16,9 +16,6 @@ configure_file (
 
 message("Compiling For ${CMAKE_BUILD_TYPE}")
 
-#set(CMAKE_PREFIX_PATH "/nix/store/p0vqa79p3xq89kpbj1p6mkwdljwja229-lapack-3/lib/"${CMAKE_PREFIX_PATH})
-#set(CMAKE_PREFIX_PATH "/nix/store/hq71v9ngl4vbawijdn09fg2q1iwycgxf-lapack-3-dev/include/"${CMAKE_PREFIX_PATH})
-
 set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -g -Wall")
 set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -g -Wall")
 
@@ -102,9 +99,7 @@ if(CUDA)
     set(SRC ${SRC} src/energy/vdw.cu)
     set(CUDA_PROPAGATE_HOST_FLAGS OFF)
     find_package(Threads REQUIRED)
-    # find_package(lapack REQUIRED)
     find_package(LAPACK REQUIRED)
-    include_directories(${LAPACK_INCLUDE_DIRS})
 else()
     message("-- CUDA Disabled")
 endif()
