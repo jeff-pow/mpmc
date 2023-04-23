@@ -216,7 +216,7 @@ int main(int argc, char **argv) {
 
 
     if (system->ensemble == ENSEMBLE_SURF) { /* surface */
-        if (surface(system) < 0) {
+        if (srface(system) < 0) {
             error("MAIN: surface module failed on error, exiting\n");
             die(1);
         }

@@ -224,7 +224,7 @@ void molecule_rotate_quaternion(molecule_t *molecule, double alpha, double beta,
 }
 
 /* calculate the isotropic potential energy surface of a molecule */
-int surface(system_t *system) {
+int srface(system_t *system) {
     int ao, bo, go, am, bm, gm, surf_print; /* for surf_output */
     int avg_counter;
     double avg_factor;

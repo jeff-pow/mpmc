@@ -4,11 +4,7 @@
 #include "cublas_v2.h"
 #include <cuda_runtime.h>
 #include <cusolverDn.h>
-#include "defines.h"
-#include "structs.h"
-#include "function_prototypes.h"
 #include <stdio.h>
-#include <mc.h>
 #include <cuda.h>
 
 // This resulted in the same times across 64, 128, 256, and 512. I just went with a middle ground...
@@ -233,6 +229,9 @@ __global__ static void print_matrix(int dim, double *A) {
 extern "C" {
 #include <stdlib.h>
 #include <time.h>
+#include "defines.h"
+#include "structs.h"
+#include "mc.h"
 
 //only run dsyev from LAPACK if compiled with -llapack, otherwise report an error
 #ifdef VDW

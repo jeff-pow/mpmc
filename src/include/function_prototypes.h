@@ -156,7 +156,7 @@ int surface_dimer_parameters(system_t *, param_g *);
 int surface_dimer_geometry_virial(system_t *, double, double, double, double, double, double, int);
 void reset_molecule_position(molecule_t *);
 void surface_curve(system_t *, double, double, double, double *);
-int surface(system_t *);
+int srface(system_t *);
 int surface_fit(system_t *);
 int surface_virial(system_t *);
 void setup_cavity_grid(system_t *);
@@ -286,6 +286,6 @@ double get_rand(system_t *system);
 double dddotprod(double *, double *);
 double didotprod(double *, int *);
 int iidotprod(int *, int *);
-double min(double a, double b);
+double double_min(double a, double b);
 int is_singular(double **a, int n);
 #endif  // FXN_PROTOTYPES_H

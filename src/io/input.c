@@ -193,7 +193,7 @@ int do_command(system_t *system, char **token) {
                          "model_dir")) {
         system->model_dir = calloc(MAXLINE, sizeof(char));
         memnullcheck(system->model_dir, MAXLINE * sizeof(char), __LINE__ - 1, __FILE__);
-        sprintf(system->model_dir, token[1]);
+        sprintf(system->model_dir, "%s", token[1]);
     }
     else if (!strcasecmp(token[0], "models")) {
         if (system->models == NULL) {
@@ -1587,7 +1587,7 @@ void setdefaults(system_t *system) {
 
         system->model_dir = calloc(MAXLINE, sizeof(char));
         memnullcheck(system->model_dir, MAXLINE * sizeof(char), __LINE__ - 1, __FILE__);
-        sprintf(system->model_dir, probable_model_path);
+        sprintf(system->model_dir, "%s", probable_model_path);
     }
 
     /* set the default scaling to 1 */
