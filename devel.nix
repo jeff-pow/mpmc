@@ -26,15 +26,12 @@ stdenv.mkDerivation {
             blas
     ];
     shellHook = ''
-# Set the necessary environment variables for CUDA
         export PATH=$PATH:${cuda}/bin
         export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${cuda}/lib64
         export PATH=$PATH:${cublas}/bin
         export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${cublas}/lib64
         export PATH=$PATH:${blas}/bin
         export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${blas}/lib64
-
-# Set the necessary environment variables for LAPACK
         export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${lapack}/lib64
         '';
 }
