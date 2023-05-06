@@ -26,6 +26,7 @@
             gcc
             blas
         ];
+    /*
     shellHook = ''
         export PATH=$PATH:${pkgs.cudaPackages.cudatoolkit}/bin
         export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${pkgs.cudaPackages.cudatoolkit}/lib64
@@ -35,6 +36,7 @@
         export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${pkgs.blas}/lib64
         export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${pkgs.lapack}/lib64
         '';
+        */
       };
     });
 }
