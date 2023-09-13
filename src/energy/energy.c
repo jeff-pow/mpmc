@@ -7,7 +7,6 @@ University of South Florida
 
 */
 
-#include "function_prototypes.h"
 #include <mc.h>
 #ifdef CUDA
 #include <pthread.h>
