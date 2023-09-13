@@ -98,7 +98,7 @@ void print_mtx(struct mtx *Cm) {
 }
 
 //build C matrix for a given molecule/system, with atom indicies (offset)/3..(offset+dim)/3
-struct mtx *build_C(int dim, int offset, double **Am, double *sqrtKinv) {
+struct mtx *build_M(int dim, int offset, double **Am, double *sqrtKinv) {
     int i;           //dummy
     int iA, jA;      //Am indicies
     int iC, jC;      //Cm indicies
@@ -241,7 +241,7 @@ double calc_e_iso(system_t *system, double *sqrtKinv, molecule_t *mptr) {
         for (atom_ptr = molecule_ptr->atoms; atom_ptr; atom_ptr = atom_ptr->next) nsize++;
 
         //build matrix for calculation of vdw energy of isolated molecule
-        Cm_iso = build_C(3 * (nsize), 3 * nstart, system->A_matrix, sqrtKinv);
+        Cm_iso = build_M(3 * (nsize), 3 * nstart, system->A_matrix, sqrtKinv);
         //diagonalize M and extract eigenvales -> calculate energy
         eigvals = lapack_diag(Cm_iso, 1);  //no eigenvectors
         e_iso = eigen2energy(eigvals, Cm_iso->dim, system->temperature);
@@ -592,7 +592,7 @@ double vdw(system_t *system) {
     e_iso = sum_eiso_vdw(system, sqrtKinv);
 
     //Build the C_Matrix
-    Cm = build_C(3 * N, 0, Am, sqrtKinv);
+    Cm = build_M(3 * N, 0, Am, sqrtKinv);
 
     //setup and use lapack diagonalization routine dsyev_()
     eigvals = lapack_diag(Cm, system->polarvdw);  //eigenvectors if system->polarvdw == 2
