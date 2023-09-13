@@ -50,6 +50,7 @@ src/energy/polar.c
 src/energy/pbc.c
 src/energy/disp_expansion.c
 src/energy/vdw.c
+src/energy/slq_vdw.c
 src/energy/pairs.c
 src/energy/bond.c
 src/energy/coulombic_gwp.c
@@ -97,6 +98,7 @@ if(CUDA)
     find_package(CUDA REQUIRED)
     set(SRC ${SRC} src/polarization/polar_cuda_pcg.cu)
     set(SRC ${SRC} src/energy/vdw.cu)
+    set(SRC ${SRC} src/energy/slq_vdw.cu)
     set(CUDA_PROPAGATE_HOST_FLAGS OFF)
     find_package(Threads REQUIRED)
     find_package(LAPACK REQUIRED)

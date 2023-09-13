@@ -28,7 +28,7 @@ void dsyev_(char *a, char *b, int *c, double *d, int *e, double *f, double *g, i
 /**
 * Calculates the two-norm of a vector
 */
-double norm(double *vec, int dim) {
+static double norm(double *vec, int dim) {
     double norm = 0;
     for (int j = 0; j < dim; j++) {
         norm += vec[j] * vec[j];
@@ -37,14 +37,14 @@ double norm(double *vec, int dim) {
     return norm;
 }
 
-void normalize(double *vec, int dim) {
+static void normalize(double *vec, int dim) {
     double n = norm(vec, dim);
     for (int j = 0; j < dim; j++) {
         vec[j] /= n;
     }
 }
 
-void lanczos(double *matrix, double *v, int m, int dim, double *alphas, double *betas, bool do_reorthoganlization) {
+static void lanczos(double *matrix, double *v, int m, int dim, double *alphas, double *betas, bool do_reorthoganlization) {
     // BUG: Does this need to be normed again?
     normalize(v, dim);
 
@@ -123,7 +123,7 @@ void lanczos(double *matrix, double *v, int m, int dim, double *alphas, double *
     free(v_last);
 }
 
-double slq_lanczos(double *matrix, int n, int dim, int m) {
+static double slq_lanczos(double *matrix, int n, int dim, int m) {
     double sum = 0;
     srand(time(0));
     for (int i = 0; i < n; i++) {
@@ -163,7 +163,7 @@ double slq_lanczos(double *matrix, int n, int dim, int m) {
     return sum * dim / n;
 }
 
-double eigen2energy(double *eigvals, int dim, double temperature) {
+static double eigen2energy(double *eigvals, int dim, double temperature) {
     int i;
     double rval = 0;
 
@@ -193,8 +193,7 @@ static double *build_C(int A_dim, int C_dim, int offset, system_t *system) {
     return C;
 }
 
-
-double calc_e_iso(system_t *system, molecule_t *mptr) {
+static double calc_e_iso(system_t *system, molecule_t *mptr) {
     int nstart, nsize;   // , curr_dimM;  (unused variable)
     double e_iso;        //total vdw energy of isolated molecules
     double *Cm_iso;  //matrix Cm_isolated
@@ -230,7 +229,7 @@ double calc_e_iso(system_t *system, molecule_t *mptr) {
     return NAN;  //we should never get here
 }
 
-double sum_eiso_vdw(system_t *system) {
+static double sum_eiso_vdw(system_t *system) {
     char linebuf[MAXLINE];
     double e_iso = 0;
     molecule_t *mp;
@@ -302,10 +301,6 @@ double fast_vdw(system_t *system) {
     //Build the C_Matrix
     Cm = build_C(3 * N, 3 * N, 0, system);
 
-    //setup and use lapack diagonalization routine dsyev_()
-    /* e_total = eigvals = lapack_diag(Cm, system->polarvdw);  //eigenvectors if system->polarvdw == 2 */
-    //return energy in inverse time (a.u.) units
-    /* e_total = eigen2energy(eigvals, 3 * N, system->temperature); */
     e_total = slq_lanczos(Cm, STOCHASTIC_ITERS, 3 * N, LANCZOS_ITERS);
     e_total *= au2invsec * halfHBAR;  //convert a.u. -> s^-1 -> K
 

@@ -77,7 +77,7 @@ void dsyev_(char *a, char *b, int *c, double *d, int *e, double *f, double *g, i
 #endif
 
 //can be used to test shit --- not actually used in any of the code
-void print_mtx(struct mtx *Cm) {
+static void print_mtx(struct mtx *Cm) {
     int iC, jC;
 
     printf(
@@ -98,7 +98,7 @@ void print_mtx(struct mtx *Cm) {
 }
 
 //build C matrix for a given molecule/system, with atom indicies (offset)/3..(offset+dim)/3
-struct mtx *build_M(int dim, int offset, double **Am, double *sqrtKinv) {
+static struct mtx *build_M(int dim, int offset, double **Am, double *sqrtKinv) {
     int i;           //dummy
     int iA, jA;      //Am indicies
     int iC, jC;      //Cm indicies
@@ -130,7 +130,7 @@ struct mtx *build_M(int dim, int offset, double **Am, double *sqrtKinv) {
     return Cm;
 }
 
-void printevects(struct mtx *M) {
+static void printevects(struct mtx *M) {
     int r, c;
 
     printf(
@@ -151,7 +151,7 @@ void printevects(struct mtx *M) {
 	/ 0  3  6 \
 	| 1  4  7 |		= 	[ 0 1 2 3 4 5 6 7 8 ]
 	\ 2  5  8 /									*/
-double *lapack_diag(struct mtx *M, int jobtype) {
+static double *lapack_diag(struct mtx *M, int jobtype) {
     char job;         //job type
     char uplo = 'L';  //operate on lower triagle
     double *work;     //working space for dsyev
@@ -206,7 +206,7 @@ double wtanh ( double w, double T ) {
 }
 */
 
-double eigen2energy(double *eigvals, int dim, double temperature) {
+static double eigen2energy(double *eigvals, int dim, double temperature) {
     int i;
     double rval = 0;
 
@@ -222,7 +222,7 @@ double eigen2energy(double *eigvals, int dim, double temperature) {
 
 //calculate energies for isolated molecules
 //if we don't know it, calculate it and save the value
-double calc_e_iso(system_t *system, double *sqrtKinv, molecule_t *mptr) {
+static double calc_e_iso(system_t *system, double *sqrtKinv, molecule_t *mptr) {
     int nstart, nsize;   // , curr_dimM;  (unused variable)
     double e_iso;        //total vdw energy of isolated molecules
     struct mtx *Cm_iso;  //matrix Cm_isolated
@@ -259,7 +259,7 @@ double calc_e_iso(system_t *system, double *sqrtKinv, molecule_t *mptr) {
 }
 
 //go through each molecule and determine the VDW energy associated with each isolated molecule
-double sum_eiso_vdw(system_t *system, double *sqrtKinv) {
+static double sum_eiso_vdw(system_t *system, double *sqrtKinv) {
     char linebuf[MAXLINE];
     double e_iso = 0;
     molecule_t *mp;
@@ -345,7 +345,7 @@ static double *getsqrtKinv(system_t *system, int N) {
 }
 
 // long-range correction
-double lr_vdw_corr(system_t *system) {
+static double lr_vdw_corr(system_t *system) {
     molecule_t *molecule_ptr;
     atom_t *atom_ptr;
     pair_t *pair_ptr;
@@ -387,7 +387,7 @@ double lr_vdw_corr(system_t *system) {
 }
 
 //calculate T matrix element for a particular separation
-double e2body(system_t *system, atom_t *atom, pair_t *pair, double r) {
+static double e2body(system_t *system, atom_t *atom, pair_t *pair, double r) {
     double energy;
     double lr = system->polar_damp * r;
     double lr2 = lr * lr;
@@ -428,7 +428,7 @@ double e2body(system_t *system, atom_t *atom, pair_t *pair, double r) {
 }
 
 // feynman-hibbs correction - molecular pair finite differencing method
-double fh_vdw_corr(system_t *system) {
+static double fh_vdw_corr(system_t *system) {
     molecule_t *molecule_ptr;
     atom_t *atom_ptr;
     pair_t *pair_ptr;
@@ -486,7 +486,7 @@ double fh_vdw_corr(system_t *system) {
 }
 
 // feynman-hibbs using 2BE (shitty)
-double fh_vdw_corr_2be(system_t *system) {
+static double fh_vdw_corr_2be(system_t *system) {
     molecule_t *molecule_ptr;
     atom_t *atom_ptr;
     pair_t *pair_ptr;
@@ -544,7 +544,7 @@ double fh_vdw_corr_2be(system_t *system) {
 }
 
 //with damping
-double twobody(system_t *system) {
+static double twobody(system_t *system) {
     molecule_t *molecule_ptr;
     atom_t *atom_ptr;
     pair_t *pair_ptr;

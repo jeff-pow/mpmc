@@ -220,6 +220,7 @@ void *vdw_cuda(void *);
 /* linear algebra - VDW */
 double vdw(system_t *);
 void free_vdw_eiso(vdw_t *);
+double fast_vdw(system_t *);
 
 /* pimc */
 int pimc(system_t *);

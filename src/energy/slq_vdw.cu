@@ -155,7 +155,7 @@ static void cudaErrorHandler(cudaError_t error, int line) {
     }
 }
 
-void fast_vdw(void *systemptr) {
+void cuda_fast_vdw(void *systemptr) {
     system_t *system = (system_t *)systemptr;
     int N = system->natoms;
     int dim = 3 * N;
