@@ -268,6 +268,7 @@ static double eigen2energy(double *eigvals, int dim, double temperature) {
     return rval;
 }
 
+
 //calculate energies for isolated molecules
 //if we don't know it, calculate it and save the value
 // This seems like it might be ripe for speeding up, but I checked the runtime and it was extremely minimal. The fact

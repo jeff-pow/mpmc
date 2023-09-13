@@ -7,6 +7,7 @@ University of South Florida
 
 */
 
+#include "function_prototypes.h"
 #include <mc.h>
 #ifdef CUDA
 #include <pthread.h>
@@ -130,6 +131,7 @@ double energy(system_t *system) {
             else {
                 thole_resize_matrices(system);
                 thole_amatrix(system);
+                /* vdw_energy = fast_vdw(system); */
                 vdw_energy = vdw(system);
                 system->observables->vdw_energy = vdw_energy;
             }
