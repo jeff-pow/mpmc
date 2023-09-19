@@ -1,4 +1,3 @@
-
 #include <mc.h>
 #include <math.h>
 #include <stdlib.h>
@@ -8,8 +7,8 @@
 #define halfHBAR 3.81911146e-12     //Ks
 #define au2invsec 4.13412763705e16  //s^-1 a.u.^-1
 #define FINITE_DIFF 0.01            //too small -> vdw calc noises becomes a problem
-#define STOCHASTIC_ITERS 30
-#define LANCZOS_ITERS 50
+#define STOCHASTIC_ITERS 50
+#define LANCZOS_SIZE 50
 
 
 //only run dsyev from LAPACK if compiled with -llapack, otherwise report an error
@@ -25,16 +24,25 @@ void dsyev_(char *a, char *b, int *c, double *d, int *e, double *f, double *g, i
 }
 #endif
 
+void print_mtx(double *matrix, int dim) {
+    for (int i = 0; i < dim; i++) {
+        for (int j = 0; j < dim; j++) {
+            printf("%14.10f ", matrix[i * dim + j]);
+        }
+        printf("\n");
+    }
+}
+
 /**
 * Calculates the two-norm of a vector
 */
 static double norm(double *vec, int dim) {
-    double norm = 0;
+    double n = 0;
     for (int j = 0; j < dim; j++) {
-        norm += vec[j] * vec[j];
+        n += vec[j] * vec[j];
     }
-    norm = sqrt(norm);
-    return norm;
+    n = sqrt(n);
+    return n;
 }
 
 static void normalize(double *vec, int dim) {
@@ -44,32 +52,58 @@ static void normalize(double *vec, int dim) {
     }
 }
 
+static void mtx_vec_mult(double *mtx, double *vec, double *result, int dim) {
+    for (int i = 0; i < dim; i++) {
+        result[i] = 0;
+        for (int j = 0; j < dim; j++) {
+            result[i] += vec[j] * mtx[i * dim + j];
+        }
+    }
+}
+
+static void vec_vec_mult(double *v1, double *v2, int dim, double *result) {
+    for (int i = 0; i < dim; i++) {
+        result[i] = v1[i] * v2[i];
+    }
+}
+
+static double dot(double *v1, double *v2, int dim) {
+    double result = 0;
+    for (int i = 0; i < dim; i++) {
+        result += v1[i] * v2[i];
+    }
+    return result;
+}
+
+static void reorthoganlize(double *vec, int dim, double *vs, int vs_len) {
+    for (int i = 0; i < vs_len; i++) {
+        for (int j = 0; j < dim; j++) {
+            double d = dot(&vs[i * dim], &vs[i * dim], dim);
+            vec[j] -= d * vs[i * dim];
+        }
+        normalize(vec, dim);
+    }
+}
+
 static void lanczos(double *matrix, double *v, int m, int dim, double *alphas, double *betas, bool do_reorthoganlization) {
     // BUG: Does this need to be normed again?
     normalize(v, dim);
 
-    double *w = malloc(dim * sizeof(double));
-    for (int i = 0; i < dim; i++) {
-        w[i] = 0;
-        for (int j = 0; j < dim; j++) {
-            w[i] += matrix[i * dim + j] * v[i];
-        }
-    }
+    double *w = calloc(dim, sizeof(double));
+    mtx_vec_mult(matrix, v, w, dim);
 
-    double alpha = 0;
-    for (int i = 0; i < dim; i++) {
-        alpha += w[i] * v[i];
-    }
+    double alpha = dot(w, v, dim);
     for (int i = 0; i < dim; i++) {
         w[i] = w[i] - alpha * v[i];
     }
-    double *v_last = malloc(dim * sizeof(double));
+
+    double *v_last = calloc(dim, sizeof(double));
     for (int i = 0; i < dim; i++) {
         v_last[i] = v[i];
     }
     alphas[0] = alpha;
 
-    double vs[dim * dim];
+    double *vs = calloc(m * dim, sizeof(double));
     for (int i = 0; i < dim; i++) {
         vs[i] = v[i];
     }
@@ -87,15 +121,15 @@ static void lanczos(double *matrix, double *v, int m, int dim, double *alphas, d
                 }
             }
             normalize(v, dim);
-            /* reorthoganlize(v, vs); */
+            // reorthoganlize(v, dim, vs, i + 1);
         }
         else {
             for (int j = 0; j < dim; j++) {
-                v[i] = w[i] / beta;
+                v[j] = w[j] / beta;
             }
         }
         if (do_reorthoganlization) {
-            /* reorthoganlize(v, vs); */
+            // reorthoganlize(v, dim, vs, i + 1);
         }
         for (int j = 0; j < dim; j++) {
             w[j] = 0;
@@ -103,10 +137,10 @@ static void lanczos(double *matrix, double *v, int m, int dim, double *alphas, d
                 w[j] += matrix[j * dim + k] * v[j];
             }
         }
-        alpha = 0;
-        for (int j = 0; j < dim; j++) {
-            alpha += w[j] * v[j];
-        }
+
+        mtx_vec_mult(matrix, v, w, dim);
+
+        alpha = dot(w, v, dim);
         for (int j = 0; j < dim; j++) {
             w[j] = w[j] - alpha * v[j] - beta * v_last[j];
         }
@@ -121,13 +155,14 @@ static void lanczos(double *matrix, double *v, int m, int dim, double *alphas, d
     }
     free(w);
     free(v_last);
+    free(vs);
 }
 
-static double slq_lanczos(double *matrix, int n, int dim, int m) {
+static double slq_lanczos(double *matrix, int num_iters, int dim, int lanczos_size) {
     double sum = 0;
     srand(time(0));
-    for (int i = 0; i < n; i++) {
-        double rademacher[dim];
+    for (int i = 0; i < num_iters; i++) {
+        double *rademacher = calloc(dim, sizeof(double));
         for (int j = 0; j < dim; j++) {
             double r = (double)rand() / RAND_MAX;
             if (r < .5) {
@@ -139,50 +174,35 @@ static double slq_lanczos(double *matrix, int n, int dim, int m) {
         }
         normalize(rademacher, dim);
 
+        double *diag = calloc(lanczos_size, sizeof(double));
+        double *sub_diag = calloc((lanczos_size - 1), sizeof(double));
+        lanczos(matrix, rademacher, lanczos_size, dim, diag, sub_diag, true);
 
-        double *diag = malloc(dim * sizeof(double));
-        double *sub_diag = malloc((dim - 1) * sizeof(double));
-        lanczos(matrix, rademacher, m, dim, diag, sub_diag, true);
-
-
-        double *work = malloc(2 * dim - 2 * sizeof(double));
-        double *eigvecs = malloc(m * dim * sizeof(double));
+        double *work = calloc((3 * lanczos_size - 2), sizeof(double));
+        double *eigvecs = calloc(lanczos_size * lanczos_size, sizeof(double));
         int info = 0;
         char job = 'V';
         // Eigvecs are placed in eigvecs, eigvals are placed in diag
-        dstev_(&job, &dim, diag, sub_diag, eigvecs, &dim, work, &info);
+        dstev_(&job, &lanczos_size, diag, sub_diag, eigvecs, &lanczos_size, work, &info);
 
-        for (int j = 0; j < m; j++) {
+        for (int j = 0; j < lanczos_size; j++) {
             sum += sqrt(diag[j]) * eigvecs[j] * eigvecs[j];
         }
         free(diag);
         free(sub_diag);
         free(work);
         free(eigvecs);
+        free(rademacher);
     }
-    return sum * dim / n;
-}
-
-static double eigen2energy(double *eigvals, int dim, double temperature) {
-    int i;
-    double rval = 0;
-
-    if (eigvals == NULL) return 0;
-
-    for (i = 0; i < dim; i++) {
-        if (eigvals[i] < 0) eigvals[i] = 0;
-        //		rval += wtanh(sqrt(eigvals[i]), temperature);
-        rval += sqrt(eigvals[i]);
-    }
-    return rval;
+    return sum * dim / num_iters;
 }
 
 static double *build_C(int A_dim, int C_dim, int offset, system_t *system) {
-    double *C = malloc(A_dim * A_dim * sizeof(double));
+    double *C = calloc(A_dim * A_dim, sizeof(double));
     for (int i = 0; i < A_dim; i++) {
         for (int j = 0; j < A_dim; j++) {
             if (j < offset || j >= C_dim + offset || i < offset || i >= C_dim + offset) {
-                C[i * A_dim +j] = 0;
+                C[i * A_dim + j] = 0;
             }
             else {
                 C[i * A_dim + j] = system->A_matrix[i][j] * system->atom_array[i / 3]->omega * system->atom_array[j / 3]->omega
@@ -217,9 +237,7 @@ static double calc_e_iso(system_t *system, molecule_t *mptr) {
         Cm_iso = build_C(A_dim, C_dim, offset, system);
         //diagonalize M and extract eigenvales -> calculate energy
         //eigvals = lapack_diag(Cm_iso, 1);  //no eigenvectors
-        e_iso = slq_lanczos(Cm_iso, STOCHASTIC_ITERS, 3 * system->natoms, LANCZOS_ITERS);
-
-
+        e_iso = slq_lanczos(Cm_iso, STOCHASTIC_ITERS, 3 * system->natoms, LANCZOS_SIZE);
 
         //convert a.u. -> s^-1 -> K
         return e_iso * au2invsec * halfHBAR;
@@ -254,8 +272,7 @@ static double sum_eiso_vdw(system_t *system) {
                 system->vdw_eiso_info = calloc(1, sizeof(vdw_t));  //allocate space
                 vpscan = system->vdw_eiso_info;  //set scan pointer
             } else {
-                for (vpscan = system->vdw_eiso_info; vpscan->next != NULL; vpscan = vpscan->next)
-                    ;
+                for (vpscan = system->vdw_eiso_info; vpscan->next != NULL; vpscan = vpscan->next);
                 vpscan->next = calloc(1, sizeof(vdw_t));  //allocate space
                 vpscan = vpscan->next;
             }  //done scanning and malloc'ing
@@ -264,8 +281,7 @@ static double sum_eiso_vdw(system_t *system) {
             strncpy(vpscan->mtype, mp->moleculetype, MAXLINE);  //assign moleculetype
             vpscan->energy = calc_e_iso(system, mp);  //assign energy
             if (isfinite(vpscan->energy) == 0) {                //if nan, then calc_e_iso failed
-                sprintf(linebuf,
-                        "VDW: Problem in calc_e_iso.\n");
+                sprintf(linebuf, "VDW: Problem in calc_e_iso.\n");
                 output(linebuf);
                 die(-1);
             }
@@ -289,29 +305,30 @@ static double sum_eiso_vdw(system_t *system) {
 double fast_vdw(system_t *system) {
     int N;                           //  dimC;  (unused variable)  //number of atoms, number of non-zero rows in C-Matrix
     double e_total, e_iso;           //total energy, isolation energy (atoms @ infinity)
-    double *Cm;                  //C_matrix (we use single pointer due to LAPACK requirements)
-    double *eigvals;                 //eigenvales
-    double fh_corr, lr_corr;
 
     N = system->natoms;
 
+    clock_t start_time = clock();
     //calculate energy vdw of isolated molecules
     e_iso = sum_eiso_vdw(system);
+    printf("e iso elapsed: %f\n", (double)(clock() - start_time) / CLOCKS_PER_SEC);
+    printf("Fast e_iso: %14.10e\n", e_iso);
+    printf("done eiso\n");
 
     //Build the C_Matrix
-    Cm = build_C(3 * N, 3 * N, 0, system);
+    double *Cm = build_C(3 * N, 3 * N, 0, system);
 
-    e_total = slq_lanczos(Cm, STOCHASTIC_ITERS, 3 * N, LANCZOS_ITERS);
+    e_total = slq_lanczos(Cm, STOCHASTIC_ITERS, 3 * N, LANCZOS_SIZE);
     e_total *= au2invsec * halfHBAR;  //convert a.u. -> s^-1 -> K
-
-
+    printf("e_total elapsed: %f\n", (double)(clock() - start_time) / CLOCKS_PER_SEC);
 
     //cleanup and return
     free(Cm);
 
     printf("Fast e_total: %14.10e\n", e_total);
-    printf("Fast e_iso: %14.10e\n", e_iso);
     printf("Fast energy: %14.10e\n", e_total - e_iso);
+    printf("done all\n");
+    printf("\n\n");
 
     return e_total - e_iso;
 }

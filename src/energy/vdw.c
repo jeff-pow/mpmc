@@ -629,6 +629,7 @@ double vdw(system_t *system) {
     printf("Slow e_total: %14.10e\n", e_total);
     printf("Slow e_iso: %14.10e\n", e_iso);
     printf("Slow energy: %14.10e\n", e_total - e_iso);
+    printf("\n\n");
 
     return e_total - e_iso + fh_corr + lr_corr;
 }

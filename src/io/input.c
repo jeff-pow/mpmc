@@ -454,19 +454,14 @@ int do_command(system_t *system, char **token) {
             system->polarization = 0;
         else
             return 1;
-    } else if (!strcasecmp(token[0],
-                           "polarvdw") ||
-               !strcasecmp(token[0],
-                           "cdvdw")) {
-        if (!strcasecmp(token[1],
-                        "on")) {
+    } else if (!strcasecmp(token[0], "polarvdw") || !strcasecmp(token[0], "cdvdw")) {
+        if (!strcasecmp(token[1], "on")) {
             system->polarvdw = 1;
             system->polarization = 1;
             system->polar_iterative = 1;  //matrix inversion destroys A_matrix before vdw can use it.
             output(
                 "INPUT: Forcing polar_iterative ON for CP-VdW.\n");
-        } else if (!strcasecmp(token[1],
-                               "evects")) {
+        } else if (!strcasecmp(token[1], "evects")) {
             system->polarvdw = 2;  //calculate eigenvectors
             system->polarization = 1;
             system->polar_iterative = 1;  //matrix inversion destroys A_matrix before vdw can use it.

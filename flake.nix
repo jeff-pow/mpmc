@@ -26,6 +26,7 @@
             cudaPackages.libcublas
             gcc
             blas
+            valgrind
         ];
     /*
     shellHook = ''
