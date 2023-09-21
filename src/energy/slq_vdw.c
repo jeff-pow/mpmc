@@ -2,6 +2,8 @@
 #include <math.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <time.h>
+#include <cblas.h>
 #define TWOoverHBAR 2.6184101e11    //K^-1 s^-1
 #define cHBAR 7.63822291e-12        //Ks //HBAR is already taken to be in Js
 #define halfHBAR 3.81911146e-12     //Ks
@@ -38,11 +40,10 @@ void print_mtx(double *matrix, int dim) {
 */
 static double norm(double *vec, int dim) {
     double n = 0;
-    for (int j = 0; j < dim; j++) {
-        n += vec[j] * vec[j];
+    for (int i = 0; i < dim; i++) {
+        n += vec[i] * vec[i];
     }
-    n = sqrt(n);
-    return n;
+    return sqrt(n);
 }
 
 static void normalize(double *vec, int dim) {
@@ -52,18 +53,12 @@ static void normalize(double *vec, int dim) {
     }
 }
 
-static void mtx_vec_mult(double *mtx, double *vec, double *result, int dim) {
+static void matrix_vec_mult(double *mtx, double *vec, double *result, int dim) {
     for (int i = 0; i < dim; i++) {
         result[i] = 0;
         for (int j = 0; j < dim; j++) {
             result[i] += vec[j] * mtx[i * dim + j];
         }
-    }
-}
-
-static void vec_vec_mult(double *v1, double *v2, int dim, double *result) {
-    for (int i = 0; i < dim; i++) {
-        result[i] = v1[i] * v2[i];
     }
 }
 
@@ -89,28 +84,37 @@ static void lanczos(double *matrix, double *v, int m, int dim, double *alphas, d
     // BUG: Does this need to be normed again?
     normalize(v, dim);
 
-    double *w = calloc(dim, sizeof(double));
-    mtx_vec_mult(matrix, v, w, dim);
+    // w = matrix @ v
+    double w[dim];
+    // matrix_vec_mult(matrix, v, w, dim);
+    cblas_dgemv(CblasRowMajor, CblasNoTrans, dim, dim, 1.0, matrix, dim, v, 1, 0, w, 1);
 
+    // alpha = w.T @ v
     double alpha = dot(w, v, dim);
+    // w = w - alpha * v
     for (int i = 0; i < dim; i++) {
         w[i] = w[i] - alpha * v[i];
     }
 
-    double *v_last = calloc(dim, sizeof(double));
+    // v_last = np.copy(v)
+    double v_last[dim];
     for (int i = 0; i < dim; i++) {
         v_last[i] = v[i];
     }
+    // alphas = [alpha]
     alphas[0] = alpha;
 
-    double *vs = calloc(m * dim, sizeof(double));
+    // vs = [np.copy(v)]
+    double vs[m * dim];
     for (int i = 0; i < dim; i++) {
         vs[i] = v[i];
     }
 
     for (int i = 0; i < m - 1; i++) {
+        // beta = np.linalg.norm(w)
         double beta = norm(w, dim);
         if (beta == 0) {
+            // Generate a new rademacher vec
             for (int j = 0; j < dim; j++) {
                 double r = (double)rand() / RAND_MAX;
                 if (r < .5) {
@@ -124,6 +128,7 @@ static void lanczos(double *matrix, double *v, int m, int dim, double *alphas, d
             // reorthoganlize(v, dim, vs, i + 1);
         }
         else {
+            // v = w / beta
             for (int j = 0; j < dim; j++) {
                 v[j] = w[j] / beta;
             }
@@ -131,38 +136,37 @@ static void lanczos(double *matrix, double *v, int m, int dim, double *alphas, d
         if (do_reorthoganlization) {
             // reorthoganlize(v, dim, vs, i + 1);
         }
-        for (int j = 0; j < dim; j++) {
-            w[j] = 0;
-            for (int k = 0; k < dim; k++) {
-                w[j] += matrix[j * dim + k] * v[j];
-            }
-        }
 
-        mtx_vec_mult(matrix, v, w, dim);
-
+        // w = matrix @ v
+        // matrix_vec_mult(matrix, v, w, dim);
+        cblas_dgemv(CblasRowMajor, CblasNoTrans, dim, dim, 1.0, matrix, dim, v, 1, 0, w, 1);
+        // alpha = w.T @ v
         alpha = dot(w, v, dim);
+        // w = w - alpha * v - beta * v_last
         for (int j = 0; j < dim; j++) {
             w[j] = w[j] - alpha * v[j] - beta * v_last[j];
         }
+        // v_last = v
         for (int j = 0; j < dim; j++) {
             v_last[j] = v[j];
         }
-        alphas[i + 1] = alpha;
-        betas[i] = beta;
+        // vs.append(np.copy(v))
         for (int j = 0; j < dim; j++) {
             vs[i * dim + j] = v[j];
         }
+        // alphas.append(alpha)
+        alphas[i + 1] = alpha;
+        // betas.append(beta)
+        betas[i] = beta;
     }
-    free(w);
-    free(v_last);
-    free(vs);
 }
 
 static double slq_lanczos(double *matrix, int num_iters, int dim, int lanczos_size) {
     double sum = 0;
     srand(time(0));
     for (int i = 0; i < num_iters; i++) {
-        double *rademacher = calloc(dim, sizeof(double));
+        printf("i: %d\n", i);
+        double rademacher[dim];
         for (int j = 0; j < dim; j++) {
             double r = (double)rand() / RAND_MAX;
             if (r < .5) {
@@ -185,6 +189,7 @@ static double slq_lanczos(double *matrix, int num_iters, int dim, int lanczos_si
         // Eigvecs are placed in eigvecs, eigvals are placed in diag
         dstev_(&job, &lanczos_size, diag, sub_diag, eigvecs, &lanczos_size, work, &info);
 
+
         for (int j = 0; j < lanczos_size; j++) {
             sum += sqrt(diag[j]) * eigvecs[j] * eigvecs[j];
         }
@@ -192,7 +197,7 @@ static double slq_lanczos(double *matrix, int num_iters, int dim, int lanczos_si
         free(sub_diag);
         free(work);
         free(eigvecs);
-        free(rademacher);
+        // free(rademacher);
     }
     return sum * dim / num_iters;
 }
@@ -238,6 +243,7 @@ static double calc_e_iso(system_t *system, molecule_t *mptr) {
         //diagonalize M and extract eigenvales -> calculate energy
         //eigvals = lapack_diag(Cm_iso, 1);  //no eigenvectors
         e_iso = slq_lanczos(Cm_iso, STOCHASTIC_ITERS, 3 * system->natoms, LANCZOS_SIZE);
+        free(Cm_iso);
 
         //convert a.u. -> s^-1 -> K
         return e_iso * au2invsec * halfHBAR;
@@ -303,26 +309,19 @@ static double sum_eiso_vdw(system_t *system) {
 
 //returns interaction VDW energy
 double fast_vdw(system_t *system) {
-    int N;                           //  dimC;  (unused variable)  //number of atoms, number of non-zero rows in C-Matrix
-    double e_total, e_iso;           //total energy, isolation energy (atoms @ infinity)
+    int N = system->natoms;
+    int dim = 3 * N;
 
-    N = system->natoms;
-
-    clock_t start_time = clock();
     //calculate energy vdw of isolated molecules
-    e_iso = sum_eiso_vdw(system);
-    printf("e iso elapsed: %f\n", (double)(clock() - start_time) / CLOCKS_PER_SEC);
+    double e_iso = sum_eiso_vdw(system);
     printf("Fast e_iso: %14.10e\n", e_iso);
-    printf("done eiso\n");
 
     //Build the C_Matrix
-    double *Cm = build_C(3 * N, 3 * N, 0, system);
+    double *Cm = build_C(dim, dim, 0, system);
 
-    e_total = slq_lanczos(Cm, STOCHASTIC_ITERS, 3 * N, LANCZOS_SIZE);
+    double e_total = slq_lanczos(Cm, STOCHASTIC_ITERS, dim, LANCZOS_SIZE);
     e_total *= au2invsec * halfHBAR;  //convert a.u. -> s^-1 -> K
-    printf("e_total elapsed: %f\n", (double)(clock() - start_time) / CLOCKS_PER_SEC);
 
-    //cleanup and return
     free(Cm);
 
     printf("Fast e_total: %14.10e\n", e_total);

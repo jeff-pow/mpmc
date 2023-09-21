@@ -16,6 +16,7 @@ energy calculation.
 
 #include <mc.h>
 #include <math.h>
+#include <time.h>
 #define TWOoverHBAR 2.6184101e11    //K^-1 s^-1
 #define cHBAR 7.63822291e-12        //Ks //HBAR is already taken to be in Js
 #define halfHBAR 3.81911146e-12     //Ks
