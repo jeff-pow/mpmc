@@ -44,7 +44,7 @@ struct mtx {
     double *val;
 };
 
-struct mtx *alloc_mtx(int dim) {
+static struct mtx *alloc_mtx(int dim) {
     //alloc matrix variable and set dim
     struct mtx *M = NULL;
     M = malloc(sizeof(struct mtx));
@@ -58,7 +58,7 @@ struct mtx *alloc_mtx(int dim) {
     return M;
 }
 
-void free_mtx(struct mtx *M) {
+static void free_mtx(struct mtx *M) {
     free(M->val);
     free(M);
     return;

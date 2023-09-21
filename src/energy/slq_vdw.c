@@ -33,6 +33,7 @@ void print_mtx(double *matrix, int dim) {
         }
         printf("\n");
     }
+    printf("dim: %d\n", dim);
 }
 
 /**
@@ -48,8 +49,8 @@ static double norm(double *vec, int dim) {
 
 static void normalize(double *vec, int dim) {
     double n = norm(vec, dim);
-    for (int j = 0; j < dim; j++) {
-        vec[j] /= n;
+    for (int i = 0; i < dim; i++) {
+        vec[i] /= n;
     }
 }
 
@@ -169,12 +170,7 @@ static double slq_lanczos(double *matrix, int num_iters, int dim, int lanczos_si
         double rademacher[dim];
         for (int j = 0; j < dim; j++) {
             double r = (double)rand() / RAND_MAX;
-            if (r < .5) {
-                rademacher[j] = -1;
-            }
-            else {
-                rademacher[j] = 1;
-            }
+            rademacher[j] = r < .5 ? -1 : 1;
         }
         normalize(rademacher, dim);
 
@@ -189,7 +185,6 @@ static double slq_lanczos(double *matrix, int num_iters, int dim, int lanczos_si
         // Eigvecs are placed in eigvecs, eigvals are placed in diag
         dstev_(&job, &lanczos_size, diag, sub_diag, eigvecs, &lanczos_size, work, &info);
 
-
         for (int j = 0; j < lanczos_size; j++) {
             sum += sqrt(diag[j]) * eigvecs[j] * eigvecs[j];
         }
@@ -197,7 +192,6 @@ static double slq_lanczos(double *matrix, int num_iters, int dim, int lanczos_si
         free(sub_diag);
         free(work);
         free(eigvecs);
-        // free(rademacher);
     }
     return sum * dim / num_iters;
 }
@@ -311,6 +305,7 @@ static double sum_eiso_vdw(system_t *system) {
 double fast_vdw(system_t *system) {
     int N = system->natoms;
     int dim = 3 * N;
+
 
     //calculate energy vdw of isolated molecules
     double e_iso = sum_eiso_vdw(system);
