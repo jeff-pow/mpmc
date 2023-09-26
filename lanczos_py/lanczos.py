@@ -22,11 +22,22 @@ def reorthagonalize(v: np.ndarray, other_vs: list[np.ndarray]):
     return v
 
 
+def mtx_mult(matrix: np.ndarray, v: np.ndarray):
+    result = [0] * len(v)
+    for i in range(len(v)):
+        for j in range(len(v)):
+            result[i] += matrix[i][j] * vector[j]
+    return result
+
+
 def lanczos(matrix: np.ndarray, v: np.ndarray, m: int, do_reorthagonalize: bool = True):
     # https://en.wikipedia.org/wiki/Lanczos_algorithm
     v /= np.linalg.norm(v)
     w = matrix @ v
     print(w)
+    print()
+    print(mtx_mult(matrix, v))
+    exit()
     # print(matrix)
     # print()
     # for a in w:
