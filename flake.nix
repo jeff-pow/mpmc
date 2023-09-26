@@ -38,6 +38,9 @@
             python310Packages.docstring-to-markdown
             python310Packages.jedi
         ];
+
+        shellHook = ''
+        '';
       };
     });
 }
