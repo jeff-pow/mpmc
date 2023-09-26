@@ -602,6 +602,7 @@ double vdw(system_t *system) {
 
     //return energy in inverse time (a.u.) units
     e_total = eigen2energy(eigvals, Cm->dim, system->temperature);
+    printf("slow trace: %f\n", e_total);
     e_total *= au2invsec * halfHBAR;  //convert a.u. -> s^-1 -> K
 
     //vdw energy comparison
@@ -627,8 +628,8 @@ double vdw(system_t *system) {
     free(eigvals);
     free_mtx(Cm);
 
-    printf("Slow e_total: %14.10e\n", e_total);
     printf("Slow e_iso: %14.10e\n", e_iso);
+    printf("Slow e_total: %14.10e\n", e_total);
     printf("Slow energy: %14.10e\n", e_total - e_iso);
     printf("\n\n");
 

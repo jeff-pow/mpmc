@@ -27,18 +27,17 @@
             gcc
             blas
             valgrind
+
+            python3
+            python311Packages.python-lsp-server
+            python311Packages.autopep8
+            python310Packages.ujson
+            python310Packages.numpy
+            python310Packages.scipy
+            python310Packages.pluggy
+            python310Packages.docstring-to-markdown
+            python310Packages.jedi
         ];
-    /*
-    shellHook = ''
-        export PATH=$PATH:${pkgs.cudaPackages.cudatoolkit}/bin
-        export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${pkgs.cudaPackages.cudatoolkit}/lib64
-        export PATH=$PATH:${pkgs.cudaPackages.libcublas}/bin
-        export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${pkgs.cudaPackages.libcublas}/lib64
-        export PATH=$PATH:${pkgs.blas}/bin
-        export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${pkgs.blas}/lib64
-        export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${pkgs.lapack}/lib64
-        '';
-        */
       };
     });
 }

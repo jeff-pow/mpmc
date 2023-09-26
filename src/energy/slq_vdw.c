@@ -9,8 +9,8 @@
 #define halfHBAR 3.81911146e-12     //Ks
 #define au2invsec 4.13412763705e16  //s^-1 a.u.^-1
 #define FINITE_DIFF 0.01            //too small -> vdw calc noises becomes a problem
-#define STOCHASTIC_ITERS 50
-#define LANCZOS_SIZE 50
+#define STOCHASTIC_ITERS 6
+#define LANCZOS_SIZE 6
 
 
 //only run dsyev from LAPACK if compiled with -llapack, otherwise report an error
@@ -34,6 +34,13 @@ void print_mtx(double *matrix, int dim) {
         printf("\n");
     }
     printf("dim: %d\n", dim);
+}
+
+static void pvec(double *vec, int dim) {
+    for (int i = 0; i < dim; i++) {
+        printf("%.15f\n", vec[i]);
+    }
+    printf("\n\n");
 }
 
 /**
@@ -87,11 +94,13 @@ static void lanczos(double *matrix, double *v, int m, int dim, double *alphas, d
 
     // w = matrix @ v
     double w[dim];
-    // matrix_vec_mult(matrix, v, w, dim);
-    cblas_dgemv(CblasRowMajor, CblasNoTrans, dim, dim, 1.0, matrix, dim, v, 1, 0, w, 1);
+    cblas_dgemv(CblasRowMajor, CblasNoTrans, dim, dim, 1, matrix, dim, v, 1, 0, w, 1);
 
     // alpha = w.T @ v
     double alpha = dot(w, v, dim);
+    pvec(w, dim);
+    pvec(v, dim);
+    printf("%.15f\n", alpha);
     // w = w - alpha * v
     for (int i = 0; i < dim; i++) {
         w[i] = w[i] - alpha * v[i];
@@ -99,21 +108,24 @@ static void lanczos(double *matrix, double *v, int m, int dim, double *alphas, d
 
     // v_last = np.copy(v)
     double v_last[dim];
-    for (int i = 0; i < dim; i++) {
-        v_last[i] = v[i];
-    }
+    memcpy(v_last, v, dim * sizeof(double));
     // alphas = [alpha]
     alphas[0] = alpha;
 
     // vs = [np.copy(v)]
-    double vs[m * dim];
-    for (int i = 0; i < dim; i++) {
-        vs[i] = v[i];
-    }
+    double vs[m][dim];
+    memcpy(vs[0], v, dim * sizeof(double));
 
     for (int i = 0; i < m - 1; i++) {
         // beta = np.linalg.norm(w)
         double beta = norm(w, dim);
+        /* if (i == 1) { */
+            printf("beta: %.15f\n", beta);
+            /* for (int i = 0; i < dim; i++) { */
+            /*     printf("%.18f\n", w[i]); */
+            /* } */
+            exit(0);
+        /* } */
         if (beta == 0) {
             // Generate a new rademacher vec
             for (int j = 0; j < dim; j++) {
@@ -125,6 +137,12 @@ static void lanczos(double *matrix, double *v, int m, int dim, double *alphas, d
                     v[j] = 1;
                 }
             }
+            v[0] = 1;
+            v[1] = -1;
+            v[2] = -1;
+            v[3] = 1;
+            v[4] = -1;
+            v[5] = -1;
             normalize(v, dim);
             // reorthoganlize(v, dim, vs, i + 1);
         }
@@ -139,7 +157,6 @@ static void lanczos(double *matrix, double *v, int m, int dim, double *alphas, d
         }
 
         // w = matrix @ v
-        // matrix_vec_mult(matrix, v, w, dim);
         cblas_dgemv(CblasRowMajor, CblasNoTrans, dim, dim, 1.0, matrix, dim, v, 1, 0, w, 1);
         // alpha = w.T @ v
         alpha = dot(w, v, dim);
@@ -148,17 +165,15 @@ static void lanczos(double *matrix, double *v, int m, int dim, double *alphas, d
             w[j] = w[j] - alpha * v[j] - beta * v_last[j];
         }
         // v_last = v
-        for (int j = 0; j < dim; j++) {
-            v_last[j] = v[j];
-        }
+        memcpy(v_last, v, dim * sizeof(double));
         // vs.append(np.copy(v))
-        for (int j = 0; j < dim; j++) {
-            vs[i * dim + j] = v[j];
-        }
+        memcpy(vs[i + 1], v, dim * sizeof(double));
         // alphas.append(alpha)
         alphas[i + 1] = alpha;
         // betas.append(beta)
         betas[i] = beta;
+        printf("alpha: %.16f\n", alpha);
+        printf("beta: %.16f\n", beta);
     }
 }
 
@@ -166,17 +181,26 @@ static double slq_lanczos(double *matrix, int num_iters, int dim, int lanczos_si
     double sum = 0;
     srand(time(0));
     for (int i = 0; i < num_iters; i++) {
-        printf("i: %d\n", i);
-        double rademacher[dim];
+        double *rademacher = calloc(dim, sizeof(double));
         for (int j = 0; j < dim; j++) {
             double r = (double)rand() / RAND_MAX;
             rademacher[j] = r < .5 ? -1 : 1;
         }
+        rademacher[0] = 1;
+        rademacher[1] = -1;
+        rademacher[2] = -1;
+        rademacher[3] = 1;
+        rademacher[4] = -1;
+        rademacher[5] = -1;
         normalize(rademacher, dim);
 
         double *diag = calloc(lanczos_size, sizeof(double));
         double *sub_diag = calloc((lanczos_size - 1), sizeof(double));
         lanczos(matrix, rademacher, lanczos_size, dim, diag, sub_diag, true);
+        for (int i = 0; i < dim; i++) {
+            printf("%.15f\n", diag[i]);
+        }
+        /* exit(0); */
 
         double *work = calloc((3 * lanczos_size - 2), sizeof(double));
         double *eigvecs = calloc(lanczos_size * lanczos_size, sizeof(double));
@@ -188,10 +212,12 @@ static double slq_lanczos(double *matrix, int num_iters, int dim, int lanczos_si
         for (int j = 0; j < lanczos_size; j++) {
             sum += sqrt(diag[j]) * eigvecs[j] * eigvecs[j];
         }
+        /* printf("%f\n", sum); */
         free(diag);
         free(sub_diag);
         free(work);
         free(eigvecs);
+        free(rademacher);
     }
     return sum * dim / num_iters;
 }
@@ -309,19 +335,20 @@ double fast_vdw(system_t *system) {
 
     //calculate energy vdw of isolated molecules
     double e_iso = sum_eiso_vdw(system);
-    printf("Fast e_iso: %14.10e\n", e_iso);
 
     //Build the C_Matrix
     double *Cm = build_C(dim, dim, 0, system);
 
-    double e_total = slq_lanczos(Cm, STOCHASTIC_ITERS, dim, LANCZOS_SIZE);
+    double e_total = slq_lanczos(Cm, 500, dim, 6);
+    printf("trace sqrtC: %f\n", e_total);
+    /* e_total = 4.190737447661821; */
     e_total *= au2invsec * halfHBAR;  //convert a.u. -> s^-1 -> K
 
     free(Cm);
 
+    printf("Fast e_iso: %14.10e\n", e_iso);
     printf("Fast e_total: %14.10e\n", e_total);
     printf("Fast energy: %14.10e\n", e_total - e_iso);
-    printf("done all\n");
     printf("\n\n");
 
     return e_total - e_iso;
