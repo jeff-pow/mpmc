@@ -29,16 +29,29 @@ void dsyev_(char *a, char *b, int *c, double *d, int *e, double *f, double *g, i
 void print_mtx(double *matrix, int dim) {
     for (int i = 0; i < dim; i++) {
         for (int j = 0; j < dim; j++) {
-            printf("%14.10f ", matrix[i * dim + j]);
+            printf("%23.20f ", matrix[i * dim + j]);
         }
         printf("\n");
     }
     printf("dim: %d\n", dim);
 }
 
-static void pvec(double *vec, int dim) {
+static void dbg(char *name, double d) {
+    if (d < 1e-10) {
+        printf("%s: %.16e\n", name, d);
+    } else {
+        printf("%s: %.16f\n", name, d);
+    }
+}
+
+static void pvec(double *vec, int dim, char *name) {
+    printf("%s:\n", name);
     for (int i = 0; i < dim; i++) {
-        printf("%.15f\n", vec[i]);
+        if (vec[i] < 1e-10) {
+            printf("%.16e\n", vec[i]);
+        } else {
+            printf("%.16f\n", vec[i]);
+        }
     }
     printf("\n\n");
 }
@@ -98,9 +111,6 @@ static void lanczos(double *matrix, double *v, int m, int dim, double *alphas, d
 
     // alpha = w.T @ v
     double alpha = dot(w, v, dim);
-    pvec(w, dim);
-    pvec(v, dim);
-    printf("%.15f\n", alpha);
     // w = w - alpha * v
     for (int i = 0; i < dim; i++) {
         w[i] = w[i] - alpha * v[i];
@@ -119,17 +129,12 @@ static void lanczos(double *matrix, double *v, int m, int dim, double *alphas, d
     for (int i = 0; i < m - 1; i++) {
         // beta = np.linalg.norm(w)
         double beta = norm(w, dim);
-        /* if (i == 1) { */
-            printf("beta: %.15f\n", beta);
-            /* for (int i = 0; i < dim; i++) { */
-            /*     printf("%.18f\n", w[i]); */
-            /* } */
-            exit(0);
-        /* } */
         if (beta == 0) {
             // Generate a new rademacher vec
             for (int j = 0; j < dim; j++) {
                 double r = (double)rand() / RAND_MAX;
+                printf("DIVIDE BY ZERO");
+                exit(0);
                 if (r < .5) {
                     v[j] = -1;
                 }
@@ -137,12 +142,6 @@ static void lanczos(double *matrix, double *v, int m, int dim, double *alphas, d
                     v[j] = 1;
                 }
             }
-            v[0] = 1;
-            v[1] = -1;
-            v[2] = -1;
-            v[3] = 1;
-            v[4] = -1;
-            v[5] = -1;
             normalize(v, dim);
             // reorthoganlize(v, dim, vs, i + 1);
         }
@@ -172,8 +171,9 @@ static void lanczos(double *matrix, double *v, int m, int dim, double *alphas, d
         alphas[i + 1] = alpha;
         // betas.append(beta)
         betas[i] = beta;
-        printf("alpha: %.16f\n", alpha);
-        printf("beta: %.16f\n", beta);
+        /* dbg("j", i); */
+        /* dbg("alpha", alpha); */
+        /* dbg("beta", beta); */
     }
 }
 
@@ -181,6 +181,7 @@ static double slq_lanczos(double *matrix, int num_iters, int dim, int lanczos_si
     double sum = 0;
     srand(time(0));
     for (int i = 0; i < num_iters; i++) {
+        dbg("i", i);
         double *rademacher = calloc(dim, sizeof(double));
         for (int j = 0; j < dim; j++) {
             double r = (double)rand() / RAND_MAX;
@@ -191,16 +192,14 @@ static double slq_lanczos(double *matrix, int num_iters, int dim, int lanczos_si
         rademacher[2] = -1;
         rademacher[3] = 1;
         rademacher[4] = -1;
-        rademacher[5] = -1;
+        rademacher[5] = 1;
         normalize(rademacher, dim);
 
         double *diag = calloc(lanczos_size, sizeof(double));
         double *sub_diag = calloc((lanczos_size - 1), sizeof(double));
         lanczos(matrix, rademacher, lanczos_size, dim, diag, sub_diag, true);
-        for (int i = 0; i < dim; i++) {
-            printf("%.15f\n", diag[i]);
-        }
-        /* exit(0); */
+        pvec(diag, lanczos_size, "alphas");
+        pvec(sub_diag, lanczos_size - 1, "betas");
 
         double *work = calloc((3 * lanczos_size - 2), sizeof(double));
         double *eigvecs = calloc(lanczos_size * lanczos_size, sizeof(double));
@@ -208,7 +207,9 @@ static double slq_lanczos(double *matrix, int num_iters, int dim, int lanczos_si
         char job = 'V';
         // Eigvecs are placed in eigvecs, eigvals are placed in diag
         dstev_(&job, &lanczos_size, diag, sub_diag, eigvecs, &lanczos_size, work, &info);
+        pvec(diag, lanczos_size, "eigvals");
 
+        print_mtx(eigvecs, lanczos_size);
         for (int j = 0; j < lanczos_size; j++) {
             sum += sqrt(diag[j]) * eigvecs[j] * eigvecs[j];
         }
@@ -339,8 +340,8 @@ double fast_vdw(system_t *system) {
     //Build the C_Matrix
     double *Cm = build_C(dim, dim, 0, system);
 
-    double e_total = slq_lanczos(Cm, 500, dim, 6);
-    printf("trace sqrtC: %f\n", e_total);
+    double e_total = slq_lanczos(Cm, dim, dim, dim);
+    printf("trace sqrtC: %.16f\n", e_total);
     /* e_total = 4.190737447661821; */
     e_total *= au2invsec * halfHBAR;  //convert a.u. -> s^-1 -> K
 

@@ -3,7 +3,7 @@ import numpy as np
 from scipy.linalg import eigh
 
 rng = np.random.default_rng()
-np.set_printoptions(precision=15)
+np.set_printoptions(precision=16)
 
 
 def stochastic_trace(matrix: np.ndarray, dim: int, n: int):
@@ -22,37 +22,11 @@ def reorthagonalize(v: np.ndarray, other_vs: list[np.ndarray]):
     return v
 
 
-def mtx_mult(matrix: np.ndarray, v: np.ndarray):
-    result = [0] * len(v)
-    for i in range(len(v)):
-        for j in range(len(v)):
-            result[i] += matrix[i][j] * vector[j]
-    return result
-
-
 def lanczos(matrix: np.ndarray, v: np.ndarray, m: int, do_reorthagonalize: bool = True):
     # https://en.wikipedia.org/wiki/Lanczos_algorithm
     v /= np.linalg.norm(v)
     w = matrix @ v
-    print(w)
-    print()
-    print(mtx_mult(matrix, v))
-    exit()
-    # print(matrix)
-    # print()
-    # for a in w:
-    #     print(a)
-    w = [0.206877763152701,
-         -0.206877763152701,
-         -0.193915859621501,
-         0.206877763152701,
-         -0.206877763152701,
-         -0.193915859621501]
-    w = np.array(w)
     alpha = w.T @ v
-    print(w)
-    print(v)
-    print(alpha)
     w = w - alpha * v
     v_last = np.copy(v)
     alphas = [alpha]
@@ -60,15 +34,11 @@ def lanczos(matrix: np.ndarray, v: np.ndarray, m: int, do_reorthagonalize: bool 
     vs = [np.copy(v)]
     for i in range(m - 1):
         beta = np.linalg.norm(w)
-        print(beta)
-        exit()
         if beta == 0:
             # avoid division by zero, create new random vector to start over
-            print("HERE")
-            exit(0)
             v = rng.uniform(size=v.shape[0])
             v = np.array([-1.0 if x < 0.5 else 1.0 for x in v])
-            v = [1, -1, -1, 1, -1, -1]
+            v = [1, -1, -1, 1, -1, 1]
             v /= np.linalg.norm(v)
             # reorthagonalize(v, vs)
         else:
@@ -81,9 +51,9 @@ def lanczos(matrix: np.ndarray, v: np.ndarray, m: int, do_reorthagonalize: bool 
         v_last = v
         alphas.append(alpha)
         betas.append(beta)
-        print("alpha:", alpha)
-        print("beta:", beta)
-        # exit(0)
+        # print("j: ", i)
+        # print("alpha:", alpha)
+        # print("beta:", beta)
         vs.append(np.copy(v))
     return alphas, betas
 
@@ -92,15 +62,22 @@ def slq_lanczos(matrix: np.ndarray, num_iters: int, dim: int, lanczos_size: int,
     # https://epubs.siam.org/doi/10.1137/16M1104974
     sum = 0
     for i in range(num_iters):
+        print("i: ", i)
         rademacher = rng.uniform(size=dim)
         rademacher = np.array([-1.0 if x < 0.5 else 1.0 for x in rademacher])
-        rademacher = [1, -1, -1, 1, -1, -1]
+        rademacher = [1, -1, -1, 1, -1, 1]
         rademacher /= np.linalg.norm(rademacher)
         alphas, betas = lanczos(matrix, rademacher, lanczos_size, do_reorthagonalize=True)
-        print(alphas)
-        exit(0)
         tridiag = np.diag(alphas) + np.diag(betas, -1) + np.diag(betas, 1)
+        print("alphas")
+        print(alphas)
+        print("betas")
+        print(betas)
         vals, vecs = eigh(tridiag)
+        print("eigvecs:")
+        print(vecs[0])
+        print("eigvals")
+        print(vals)
         for j in range(lanczos_size):
             sum += f(vals[j]) * vecs[0][j]**2
     return sum * dim / num_iters
@@ -213,7 +190,7 @@ def test():
     print(np.trace(sqrt_A))
 
     # print("30 50", slq_lanczos(A, 30, d, 50, np.sqrt))
-    print("50 50", slq_lanczos(A, 6, d, d, np.sqrt))
+    print("50 50", slq_lanczos(A, d, d, d, np.sqrt))
 
 
 def test_slq_lanczos_large():
