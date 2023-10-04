@@ -26,7 +26,18 @@ void dsyev_(char *a, char *b, int *c, double *d, int *e, double *f, double *g, i
 }
 #endif
 
-void print_mtx(double *matrix, int dim) {
+void column_first_mtx(double *matrix, int dim) {
+    for (int i = 0; i < dim; i++) {
+        for (int j = 0; j < dim; j++) {
+            printf("%15.13f ", matrix[j * dim + i]);
+        }
+        printf("\n");
+    }
+    printf("dim: %d\n", dim);
+
+}
+
+void row_first_mtx(double *matrix, int dim) {
     for (int i = 0; i < dim; i++) {
         for (int j = 0; j < dim; j++) {
             printf("%23.20f ", matrix[i * dim + j]);
@@ -101,7 +112,7 @@ static void reorthoganlize(double *vec, int dim, double *vs, int vs_len) {
     }
 }
 
-static void lanczos(double *matrix, double *v, int m, int dim, double *alphas, double *betas, bool do_reorthoganlization) {
+static void lanczos(double *matrix, double *v, int lanczos_size, int dim, double *alphas, double *betas, bool do_reorthoganlization) {
     // BUG: Does this need to be normed again?
     normalize(v, dim);
 
@@ -123,10 +134,11 @@ static void lanczos(double *matrix, double *v, int m, int dim, double *alphas, d
     alphas[0] = alpha;
 
     // vs = [np.copy(v)]
-    double vs[m][dim];
+    double (*vs)[dim];
+    vs = calloc(lanczos_size, sizeof(double[dim]));
     memcpy(vs[0], v, dim * sizeof(double));
 
-    for (int i = 0; i < m - 1; i++) {
+    for (int i = 0; i < lanczos_size - 1; i++) {
         // beta = np.linalg.norm(w)
         double beta = norm(w, dim);
         if (beta == 0) {
@@ -177,29 +189,81 @@ static void lanczos(double *matrix, double *v, int m, int dim, double *alphas, d
     }
 }
 
+static double *lapack_diag(double *mtx, int dim) {
+    char job = 'V';         //job type
+    char uplo = 'L';  //operate on lower triagle
+    double *work;     //working space for dsyev
+    int lwork;        //size of work array
+    int rval = 0;     //returned from dsyev_
+    double *eigvals;
+    char linebuf[MAXLINE];
+
+
+    //allocate eigenvalues array
+    eigvals = malloc(dim * sizeof(double));
+    //optimize the size of work array
+    lwork = -1;
+    work = malloc(sizeof(double));
+    dsyev_(&job, &uplo, &(dim), mtx, &(dim), eigvals, work, &lwork, &rval);
+    //now optimize work array size is stored as work[0]
+    lwork = (int)work[0];
+    work = realloc(work, lwork * sizeof(double));
+    //diagonalize
+    dsyev_(&job, &uplo, &(dim), mtx, &(dim), eigvals, work, &lwork, &rval);
+
+    if (rval != 0) {
+        sprintf(linebuf,
+                "error: LAPACK: dsyev returned error: %d\n", rval);
+        error(linebuf);
+        die(-1);
+    }
+
+    free(work);
+
+    return eigvals;
+}
+
 static double slq_lanczos(double *matrix, int num_iters, int dim, int lanczos_size) {
     double sum = 0;
     srand(time(0));
     for (int i = 0; i < num_iters; i++) {
-        dbg("i", i);
         double *rademacher = calloc(dim, sizeof(double));
         for (int j = 0; j < dim; j++) {
             double r = (double)rand() / RAND_MAX;
             rademacher[j] = r < .5 ? -1 : 1;
         }
-        rademacher[0] = 1;
-        rademacher[1] = -1;
-        rademacher[2] = -1;
-        rademacher[3] = 1;
-        rademacher[4] = -1;
-        rademacher[5] = 1;
+        /* rademacher[0] = 1; */
+        /* rademacher[1] = -1; */
+        /* rademacher[2] = -1; */
+        /* rademacher[3] = 1; */
+        /* rademacher[4] = -1; */
+        /* rademacher[5] = -1; */
         normalize(rademacher, dim);
 
         double *diag = calloc(lanczos_size, sizeof(double));
         double *sub_diag = calloc((lanczos_size - 1), sizeof(double));
         lanczos(matrix, rademacher, lanczos_size, dim, diag, sub_diag, true);
-        pvec(diag, lanczos_size, "alphas");
-        pvec(sub_diag, lanczos_size - 1, "betas");
+        /* pvec(diag, lanczos_size, "alphas"); */
+        /* pvec(sub_diag, lanczos_size - 1, "betas"); */
+        /* double *A = calloc(lanczos_size * lanczos_size, sizeof(double)); */
+        /* for (int i = 0; i < lanczos_size; i++) { */
+        /*     A[i * lanczos_size + i] = diag[i]; */
+        /* } */
+        /* A[1] = sub_diag[0]; */
+        /* A[6] = sub_diag[0]; */
+        /* A[8] = sub_diag[1]; */
+        /* A[13] = sub_diag[1]; */
+        /* A[15] = sub_diag[2]; */
+        /* A[20] = sub_diag[2]; */
+        /* A[22] = sub_diag[3]; */
+        /* A[27] = sub_diag[3]; */
+        /* A[29] = sub_diag[4]; */
+        /* A[34] = sub_diag[4]; */
+        /* column_first_mtx(A, lanczos_size); */
+
+        /* double *vals = lapack_diag(A, lanczos_size); */
+        /* pvec(vals, lanczos_size, "vecs"); */
+        /* column_first_mtx(A, lanczos_size); */
 
         double *work = calloc((3 * lanczos_size - 2), sizeof(double));
         double *eigvecs = calloc(lanczos_size * lanczos_size, sizeof(double));
@@ -207,13 +271,13 @@ static double slq_lanczos(double *matrix, int num_iters, int dim, int lanczos_si
         char job = 'V';
         // Eigvecs are placed in eigvecs, eigvals are placed in diag
         dstev_(&job, &lanczos_size, diag, sub_diag, eigvecs, &lanczos_size, work, &info);
-        pvec(diag, lanczos_size, "eigvals");
+        /* pvec(diag, lanczos_size, "eigvals"); */
 
-        print_mtx(eigvecs, lanczos_size);
+        /* column_first_mtx(eigvecs, lanczos_size); */
+
         for (int j = 0; j < lanczos_size; j++) {
-            sum += sqrt(diag[j]) * eigvecs[j] * eigvecs[j];
+            sum += sqrt(diag[j]) * eigvecs[j * lanczos_size] * eigvecs[j * lanczos_size];
         }
-        /* printf("%f\n", sum); */
         free(diag);
         free(sub_diag);
         free(work);
@@ -340,7 +404,7 @@ double fast_vdw(system_t *system) {
     //Build the C_Matrix
     double *Cm = build_C(dim, dim, 0, system);
 
-    double e_total = slq_lanczos(Cm, dim, dim, dim);
+    double e_total = slq_lanczos(Cm, 200, dim, 200);
     printf("trace sqrtC: %.16f\n", e_total);
     /* e_total = 4.190737447661821; */
     e_total *= au2invsec * halfHBAR;  //convert a.u. -> s^-1 -> K
