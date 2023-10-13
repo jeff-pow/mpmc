@@ -123,7 +123,7 @@ void thole_amatrix(system_t *system) {
                         damp1 = damp2 = 1.0;
                     }
                     break;
-                case DAMPING_EXPONENTIAL:
+                case DAMPING_EXPONENTIAL_UNSCALED:
                     explr = exp(-l * r);
                     damp1 = 1.0 - explr * (0.5 * l2 * r2 + l * r + 1.0);
                     damp2 = damp1 - explr * (l3 * r2 * r / 6.0);

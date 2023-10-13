@@ -321,7 +321,7 @@ void polarization_options(system_t *system) {
             error(
                 "INPUT: CUDA GPU acceleration available for iterative Thole only\n");
             die(-1);
-        } else if (system->damp_type != DAMPING_EXPONENTIAL) {
+        } else if (system->damp_type != DAMPING_EXPONENTIAL_UNSCALED) {
             error(
                 "INPUT: CUDA GPU accleration available for exponential Thole damping only\n");
             die(-1);
@@ -388,10 +388,10 @@ void polarization_options(system_t *system) {
     else if (system->damp_type == DAMPING_OFF)
         output(
             "INPUT: Thole linear damping is OFF\n");
-    else if (system->damp_type == DAMPING_EXPONENTIAL)
+    else if (system->damp_type == DAMPING_EXPONENTIAL_UNSCALED)
         output(
             "INPUT: Thole exponential damping activated\n");
-    else if (system->damp_type == DAMPING_EXPONENTIAL_FIXED) {
+    else if (system->damp_type == DAMPING_EXPONENTIAL) {
         output(
             "INPUT: Thole exponential damping activated\n");
     }

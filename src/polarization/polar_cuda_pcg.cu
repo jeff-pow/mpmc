@@ -9,6 +9,7 @@
 #include "cublas_v2.h"
 #include <cuda_runtime.h>
 #include <stdio.h>
+#include <defines.h>
 
 #define MAXFVALUE 1.0e13f
 
@@ -63,7 +64,7 @@ __global__ static void print_a(int N, float *A) {
  * Method uses exponential polarization regardless of method requested in input
  * script
  */
-__global__ static void build_a(int N, float *A, const float damp, float3 *pos, float *pols) {
+__global__ static void build_a(int N, float *A, const float damp, float3 *pos, float *pols, const int damp_type) {
     int i = blockIdx.x, j;
 
     if (i >= N)
@@ -136,7 +137,38 @@ __global__ static void build_a(int N, float *A, const float damp, float3 *pos, f
             r5 = 1.0f / r5;
             // END MINIMUM IMAGE
 
+
+            switch (damp_type) {
+                case DAMPING_EXPONENTIAL_UNSCALED:
+                    // damping terms
+                    expr = exp(-damp * r);
+                    damping_term1 = 1.0f - expr * (0.5f * damp2 * r2 + damp * r + 1.0f);
+                    damping_term2 = 1.0f - expr * (damp3 * r * r2 / 6.0f + 0.5f * damp2 * r2 +
+                        damp * r + 1.0f);
+
+                    // construct the Tij tensor field, unrolled by hand to avoid conditional
+                    // on the diagonal terms
+                    damping_term1 *= r3;
+                    damping_term2 *= -3.0f * r5;
+                    break;
+                default: {
+                    double l = damp;
+                    double l2 = l * l;
+                    double l3 = l * l * l;
+                    double u;
+                    if (pols[i] * pols[j] == 0) {
+                        u = r;
+                    } else {
+                        u = r / pow(pols[i] * pols[j], 1 / 6.0);
+                    }
+                    double explr = exp(-l * u);
+                    damping_term1 = 1.0 - explr * (.5 * l2 * u * u + l * u + 1.0);
+                    damping_term2 = damping_term1 - explr * (l3 * u * u * u / 6.0);
+                    break;
+                }
+            }
             // damping terms
+            /*
             expr = __expf(-damp * r);
             damping_term1 = 1.0f - expr * (0.5f * damp2 * r2 + damp * r + 1.0f);
             damping_term2 = 1.0f - expr * (damp3 * r * r2 / 6.0f + 0.5f * damp2 * r2 +
@@ -146,6 +178,7 @@ __global__ static void build_a(int N, float *A, const float damp, float3 *pos, f
             // on the diagonal terms
             damping_term1 *= r3;
             damping_term2 *= -3.0f * r5;
+            */
 
             // exploit symmetry
             A[9 * N * j + 3 * i] = dri.x * dri.x * damping_term2 + damping_term1;
@@ -374,7 +407,7 @@ extern "C" {
                 __LINE__);
 
         // make A matrix on GPU
-        build_a<<<N, THREADS>>>(N, A, system->polar_damp, pos, pols);
+        build_a<<<N, THREADS>>>(N, A, system->polar_damp, pos, pols, system->damp_type);
         /*
         printf("polar a matrix\n");
         print_a<<<1, 1>>>(N, A);

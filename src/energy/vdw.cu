@@ -138,7 +138,7 @@ __global__ static void build_a(int N, double *A, const double damp, double3 *pos
             // END MINIMUM IMAGE
 
             switch (damp_type) {
-                case DAMPING_EXPONENTIAL:
+                case DAMPING_EXPONENTIAL_UNSCALED:
                     // damping terms
                     expr = exp(-damp * r);
                     damping_term1 = 1.0f - expr * (0.5f * damp2 * r2 + damp * r + 1.0f);
