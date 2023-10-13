@@ -6,6 +6,7 @@ University of South Florida
 
 */
 
+#include "defines.h"
 #include <mc.h>
 
 //convert string *a to a double and store at the address of f.
@@ -1178,15 +1179,14 @@ int do_command(system_t *system, char **token) {
         if (!strcasecmp(token[1],
                         "none"))
             system->damp_type = DAMPING_OFF;
-        else if (!strcasecmp(token[1],
-                             "off"))
+        else if (!strcasecmp(token[1], "off"))
             system->damp_type = DAMPING_OFF;
-        else if (!strcasecmp(token[1],
-                             "linear"))
+        else if (!strcasecmp(token[1], "linear"))
             system->damp_type = DAMPING_LINEAR;
-        else if (!strcasecmp(token[1],
-                             "exponential"))
+        else if (!strcasecmp(token[1], "exponential"))
             system->damp_type = DAMPING_EXPONENTIAL;
+        else if (!strcasecmp(token[1], "exponential_fixed"))
+            system->damp_type = DAMPING_EXPONENTIAL_FIXED;
         else
             return 1;
     } else if (!strcasecmp(token[0],

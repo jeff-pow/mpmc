@@ -391,6 +391,10 @@ void polarization_options(system_t *system) {
     else if (system->damp_type == DAMPING_EXPONENTIAL)
         output(
             "INPUT: Thole exponential damping activated\n");
+    else if (system->damp_type == DAMPING_EXPONENTIAL_FIXED) {
+        output(
+            "INPUT: Thole exponential damping activated\n");
+    }
     else {
         error(
             "INPUT: Thole damping method not specified\n");

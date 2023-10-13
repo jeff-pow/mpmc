@@ -9,8 +9,8 @@
 #define halfHBAR 3.81911146e-12     //Ks
 #define au2invsec 4.13412763705e16  //s^-1 a.u.^-1
 #define FINITE_DIFF 0.01            //too small -> vdw calc noises becomes a problem
-#define STOCHASTIC_ITERS 6
-#define LANCZOS_SIZE 6
+#define STOCHASTIC_ITERS 100
+#define LANCZOS_SIZE 100
 
 
 //only run dsyev from LAPACK if compiled with -llapack, otherwise report an error
@@ -227,6 +227,7 @@ static double slq_lanczos(double *matrix, int num_iters, int dim, int lanczos_si
     double sum = 0;
     srand(time(0));
     for (int i = 0; i < num_iters; i++) {
+        dbg("i", i);
         double *rademacher = calloc(dim, sizeof(double));
         for (int j = 0; j < dim; j++) {
             double r = (double)rand() / RAND_MAX;
@@ -404,7 +405,7 @@ double fast_vdw(system_t *system) {
     //Build the C_Matrix
     double *Cm = build_C(dim, dim, 0, system);
 
-    double e_total = slq_lanczos(Cm, 200, dim, 200);
+    double e_total = slq_lanczos(Cm, STOCHASTIC_ITERS, dim, LANCZOS_SIZE);
     printf("trace sqrtC: %.16f\n", e_total);
     /* e_total = 4.190737447661821; */
     e_total *= au2invsec * halfHBAR;  //convert a.u. -> s^-1 -> K
