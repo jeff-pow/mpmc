@@ -150,7 +150,7 @@ __global__ static void build_a(int N, double *A, const double damp, double3 *pos
                     damping_term1 *= r3;
                     damping_term2 *= -3.0f * r5;
                     break;
-                case DAMPING_EXPONENTIAL_FIXED: {
+                default: {
                     double l = damp;
                     double l2 = l * l;
                     double l3 = l * l * l;
@@ -165,9 +165,6 @@ __global__ static void build_a(int N, double *A, const double damp, double3 *pos
                     damping_term2 = damping_term1 - explr * (l3 * u * u * u / 6.0);
                     break;
                 }
-                default:
-                    printf("Damping type has not been implemented for many body van der waals.\n");
-                    printf("Error in vdw.cu\n");
             }
 
 
