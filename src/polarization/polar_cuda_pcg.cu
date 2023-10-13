@@ -151,7 +151,7 @@ __global__ static void build_a(int N, float *A, const float damp, float3 *pos, f
                     damping_term1 *= r3;
                     damping_term2 *= -3.0f * r5;
                     break;
-                default: {
+                default: { // Damping exponential with corrections
                     double l = damp;
                     double l2 = l * l;
                     double l3 = l * l * l;
