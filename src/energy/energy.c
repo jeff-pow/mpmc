@@ -131,7 +131,6 @@ double energy(system_t *system) {
                 thole_resize_matrices(system);
                 thole_amatrix(system);
                 vdw_energy = vdw(system);
-                fast_vdw(system);
                 system->observables->vdw_energy = vdw_energy;
             }
 
@@ -139,7 +138,6 @@ double energy(system_t *system) {
             polar_energy = polar(system);
             system->observables->polarization_energy = polar_energy;
             if (system->polarvdw) {
-                /* fast_vdw(system); */
                 vdw_energy = vdw(system);
                 system->observables->vdw_energy = vdw_energy;
             }
@@ -305,12 +303,10 @@ double energy_no_observables(system_t *system) {
                 die(-1);
             } else
                 vdw_energy = vdw(system);
-                /* fast_vdw(system); */
 
 #else
 
             vdw_energy = vdw(system);
-            /* fast_vdw(system); */
 
 #endif
         }
