@@ -133,7 +133,7 @@ void thole_amatrix(system_t *system) {
                     }
                     break;
                
-                case DAMPING_EXPONENTIAL_FIXED: {
+                case DAMPING_EXPONENTIAL: {
                     double u;
                     if ( atom_array[i]->polarizability * atom_array[j]->polarizability == 0 ) {
                         u = r;

@@ -163,6 +163,9 @@ __global__ static void build_a(int N, double *A, const double damp, double3 *pos
                     double explr = exp(-l * u);
                     damping_term1 = 1.0 - explr * (.5 * l2 * u * u + l * u + 1.0);
                     damping_term2 = damping_term1 - explr * (l3 * u * u * u / 6.0);
+
+                    damping_term1 *= r3;
+                    damping_term2 *= -3.0f * r5;
                     break;
                 }
             }

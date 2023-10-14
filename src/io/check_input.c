@@ -321,10 +321,6 @@ void polarization_options(system_t *system) {
             error(
                 "INPUT: CUDA GPU acceleration available for iterative Thole only\n");
             die(-1);
-        } else if (system->damp_type != DAMPING_EXPONENTIAL_UNSCALED) {
-            error(
-                "INPUT: CUDA GPU accleration available for exponential Thole damping only\n");
-            die(-1);
         } else if (!system->polar_max_iter) {
             /* XXX disable for 1 iter testing */
             //error("INPUT: Must set polar_max_iter for CUDA GPU acceleration\n");
