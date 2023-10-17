@@ -26,6 +26,8 @@ set(LIB m)
 
 set(INCLUDE src/include ${PROJECT_BINARY_DIR}/src/include)
 
+file(GLOB BLAS "./src/openblas/*.c")
+
 set(SRC
 src/mc/mc_moves.c
 src/mc/surface_fit_arbitrary.c
@@ -79,6 +81,8 @@ src/polarization/polar_ewald.c
 src/polarization/thole_iterative.c
 )
 
+set(SRC ${SRC} ${BLAS})
+
 if(MPI)
     message("-- MPI Enabled")
     find_package(MPI REQUIRED)
@@ -108,19 +112,10 @@ if(QM_ROTATION)
         src/quantum_rotation/rotational_eigenspectrum.c
         src/quantum_rotation/rotational_integrate.c
         src/quantum_rotation/rotational_potential.c)
-    set(LIB ${LIB} lapack)
 else()
     message("-- QM Rotation Disabled")
 endif()
 
-if(VDW)
-    message("-- CDVDW Enabled")
-    if(NOT QM_ROTATION)
-        set(LIB ${LIB} lapack)
-    endif()
-else()
-    message("-- CDVDW Disabled")
-endif()
 
 include_directories(${INCLUDE})
 if(CUDA)
