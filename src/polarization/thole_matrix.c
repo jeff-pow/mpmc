@@ -132,7 +132,6 @@ void thole_amatrix(system_t *system) {
                         wdamp2 = wdamp1 - explrcut * (l3 * rcut3 / 6.0);
                     }
                     break;
-               
                 case DAMPING_EXPONENTIAL: {
                     double u;
                     if ( atom_array[i]->polarizability * atom_array[j]->polarizability == 0 ) {
@@ -154,7 +153,7 @@ void thole_amatrix(system_t *system) {
                     error(
                         "error: something unexpected happened in thole_matrix.c");
             }
-            
+
 
             /* build the tensor */
             for (p = 0; p < 3; p++) {
