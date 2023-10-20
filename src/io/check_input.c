@@ -386,7 +386,10 @@ void polarization_options(system_t *system) {
             "INPUT: Thole linear damping is OFF\n");
     else if (system->damp_type == DAMPING_EXPONENTIAL_UNSCALED)
         output(
-            "INPUT: Thole exponential damping activated\n");
+            "INPUT: Thole exponential unscaled damping activated\n");
+    else if (system->damp_type == DAMPING_AMOEBA)
+        output(
+            "INPUT: Thole amoeba damping activated\n");
     else if (system->damp_type == DAMPING_EXPONENTIAL) {
         output(
             "INPUT: Thole exponential damping activated\n");

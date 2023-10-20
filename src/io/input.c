@@ -1187,6 +1187,8 @@ int do_command(system_t *system, char **token) {
             system->damp_type = DAMPING_EXPONENTIAL_UNSCALED;
         else if (!strcasecmp(token[1], "exponential"))
             system->damp_type = DAMPING_EXPONENTIAL;
+        else if (!strcasecmp(token[1], "amoeba_damping"))
+            system->damp_type = DAMPING_AMOEBA;
         else
             return 1;
     } else if (!strcasecmp(token[0],

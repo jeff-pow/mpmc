@@ -149,6 +149,20 @@ void thole_amatrix(system_t *system) {
                     }
                     break;
                 }
+                case DAMPING_AMOEBA: {
+                    double u;
+                    if ( atom_array[i]->polarizability * atom_array[j]->polarizability == 0 ) {
+                        u = r;
+                    }
+                    else {
+                        u = r / pow(atom_array[i]->polarizability * atom_array[j]->polarizability, 1.0 / 6.0);
+                    }
+                    double u3 = u * u * u;
+                    explr = exp(-l * u3);
+                    damp1 = 1 - explr;
+                    damp2 = 1 - (1 + l * u3) * explr;
+                    break;
+                }
                 default:
                     error(
                         "error: something unexpected happened in thole_matrix.c");
