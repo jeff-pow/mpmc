@@ -7,6 +7,7 @@
 #include <cusolverDn.h>
 #include <stdio.h>
 #include <cuda.h>
+#include "defines.h"
 
 // This resulted in the same times across 64, 128, 256, and 512. I just went with a middle ground...
 #define THREADS 128
@@ -24,7 +25,7 @@ __constant__ double recip_basis[9];
  * Method uses exponential polarization regardless of method requested in input
  * script
  */
-__global__ static void build_a(int N, double *A, const double damp, double3 *pos, double *pols) {
+__global__ static void build_a(int N, double *A, const double damp, double3 *pos, double *pols, const int damp_type) {
     int i = blockIdx.x, j;
 
     if (i >= N)
@@ -100,14 +101,49 @@ __global__ static void build_a(int N, double *A, const double damp, double3 *pos
             r5 = 1.0f / r5;
             // END MINIMUM IMAGE
 
-            // damping terms
-            expr = exp(-damp * r);
-            damping_term1 = 1.0f - expr * (0.5f * damp2 * r2 + damp * r + 1.0f);
-            damping_term2 = 1.0f - expr * (damp3 * r * r2 / 6.0f + 0.5f * damp2 * r2 +
-                damp * r + 1.0f);
+            switch (damp_type) {
+                case DAMPING_EXPONENTIAL_UNSCALED: {
+                    // damping terms
+                    expr = exp(-damp * r);
+                    damping_term1 = 1.0f - expr * (0.5f * damp2 * r2 + damp * r + 1.0f);
+                    damping_term2 = 1.0f - expr * (damp3 * r * r2 / 6.0f + 0.5f * damp2 * r2 +
+                        damp * r + 1.0f);
 
-            // construct the Tij tensor field, unrolled by hand to avoid conditional
-            // on the diagonal terms
+                    break;
+                }
+                case DAMPING_AMOEBA: {
+                    double l = damp;
+                    double u;
+                    if (pols[i] * pols[j] == 0) {
+                        u = r;
+                    } else {
+                        u = r / pow(pols[i] * pols[j], 1 / 6.0);
+                    }
+                    double u3 = u * u * u;
+                    double explr = exp(-l * u3);
+                    damping_term1 = 1 - explr;
+                    damping_term2 = 1 - (1 + l * u3) * explr;
+
+                    break;
+                }
+                default: { // Damping exponential with corrections
+                    double l = damp;
+                    double l2 = l * l;
+                    double l3 = l * l * l;
+                    double u;
+                    if (pols[i] * pols[j] == 0) {
+                        u = r;
+                    } else {
+                        u = r / pow(pols[i] * pols[j], 1 / 6.0);
+                    }
+                    double explr = exp(-l * u);
+                    damping_term1 = 1.0 - explr * (.5 * l2 * u * u + l * u + 1.0);
+                    damping_term2 = damping_term1 - explr * (l3 * u * u * u / 6.0);
+
+                    break;
+                }
+            }
+
             damping_term1 *= r3;
             damping_term2 *= -3.0f * r5;
 
@@ -208,7 +244,7 @@ void cuda_fast_vdw(void *systemptr) {
     cudaErrorHandler(cudaMemcpy(device_pols, host_pols, N * sizeof(double), cudaMemcpyHostToDevice), __LINE__);
     cudaDeviceSynchronize();
 
-    build_a<<<N, THREADS>>>(N, device_A_matrix, system->polar_damp, device_pos, device_pols);
+    build_a<<<N, THREADS>>>(N, device_A_matrix, system->polar_damp, device_pos, device_pols, system->damp_type);
     cudaDeviceSynchronize();
     cudaErrorHandler(cudaGetLastError(), __LINE__ - 1);
 
