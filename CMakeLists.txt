@@ -26,11 +26,6 @@ set(LIB m)
 
 set(INCLUDE src/include ${PROJECT_BINARY_DIR}/src/include)
 
-add_subdirectory(./lapack)
-set(LIB ${LIB} lapack)
-set(LIB ${LIB} gfortran)
-set(LIB ${LIB} libgfortran.a)
-set(LIB ${LIB} quadmath)
 
 set(SRC
 src/mc/mc_moves.c
@@ -115,6 +110,12 @@ if(QM_ROTATION)
         src/quantum_rotation/rotational_eigenspectrum.c
         src/quantum_rotation/rotational_integrate.c
         src/quantum_rotation/rotational_potential.c)
+
+    add_subdirectory(./lapack)
+    set(LIB ${LIB} lapack)
+    set(LIB ${LIB} gfortran)
+    set(LIB ${LIB} libgfortran.a)
+    set(LIB ${LIB} quadmath)
     set(LIB ${LIB} lapack)
 else()
     message("-- QM Rotation Disabled")
@@ -123,6 +124,11 @@ endif()
 if(VDW)
     message("-- CDVDW Enabled")
     if(NOT QM_ROTATION)
+        add_subdirectory(./lapack)
+        set(LIB ${LIB} lapack)
+        set(LIB ${LIB} gfortran)
+        set(LIB ${LIB} libgfortran.a)
+        set(LIB ${LIB} quadmath)
         set(LIB ${LIB} lapack)
     endif()
 else()

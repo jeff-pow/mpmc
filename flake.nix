@@ -31,7 +31,6 @@
             blas
             valgrind
 
-
             python3
             python311Packages.python-lsp-server
             python311Packages.autopep8
