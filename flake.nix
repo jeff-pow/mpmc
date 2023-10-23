@@ -19,14 +19,18 @@
     {
       devShells.default = pkgs.mkShell {
         packages = with pkgs; [
+            gfortran
+            gfortran.cc
+
             clang-tools
-            lapack
+            # lapack
             cudaPackages.cudatoolkit
             cmake
             cudaPackages.libcublas
             gcc
             blas
             valgrind
+
 
             python3
             python311Packages.python-lsp-server

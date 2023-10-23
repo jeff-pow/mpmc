@@ -26,8 +26,11 @@ set(LIB m)
 
 set(INCLUDE src/include ${PROJECT_BINARY_DIR}/src/include)
 
-# file(GLOB BLAS "./src/openblas/*.c")
-add_subdirectory(./OpenBLAS/)
+add_subdirectory(./lapack)
+set(LIB ${LIB} lapack)
+set(LIB ${LIB} gfortran)
+set(LIB ${LIB} libgfortran.a)
+set(LIB ${LIB} quadmath)
 
 set(SRC
 src/mc/mc_moves.c
@@ -82,7 +85,6 @@ src/polarization/polar_ewald.c
 src/polarization/thole_iterative.c
 )
 
-# set(SRC ${SRC} ${BLAS})
 
 if(MPI)
     message("-- MPI Enabled")
@@ -113,7 +115,7 @@ if(QM_ROTATION)
         src/quantum_rotation/rotational_eigenspectrum.c
         src/quantum_rotation/rotational_integrate.c
         src/quantum_rotation/rotational_potential.c)
-    set(LIB ${LIB} OpenBLAS)
+    set(LIB ${LIB} lapack)
 else()
     message("-- QM Rotation Disabled")
 endif()
@@ -121,7 +123,7 @@ endif()
 if(VDW)
     message("-- CDVDW Enabled")
     if(NOT QM_ROTATION)
-        set(LIB ${LIB} OpenBLAS)
+        set(LIB ${LIB} lapack)
     endif()
 else()
     message("-- CDVDW Disabled")
