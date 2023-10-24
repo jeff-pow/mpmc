@@ -11,46 +11,26 @@
 #include <cuda_runtime.h>
 #include <stdio.h>
 #include <defines.h>
+#include "cuda_functions.cuh"
 
-#define MAXFVALUE 1.0e13f
 
-#define THREADS 1024
 
-__constant__ float basis[9];
-__constant__ float recip_basis[9];
 
-__global__ void precondition_z(int N, float *A, float *r, float *z) {
+__global__ void precondition_z(int N, double *A, double *r, double *z) {
     int i = blockIdx.x;
     if (i < N)
         z[i] = 1.0 / A[N * i + i] * r[i];
     return;
 }
 
-__global__ void print_b(int N, float *B) {
+__global__ void print_b(int N, double *B) {
     for (int i = 0; i < 3; i++) {
         printf("a");
     }
 }
 
-__global__
-static void print_basis_sets() {
-    for (int i = 0; i < 3 * 3; i++) {
-        printf("%8.5f ", basis[i]);
-        if ((i + 1) % 3 == 0 && i != 0) {
-            printf("\n");
-        }
-    }
-    printf("\n");
-    for (int i = 0; i < 3 * 3; i++) {
-        printf("%8.5f ", recip_basis[i]);
-        if ((i + 1) % 3 == 0 && i != 0) {
-            printf("\n");
-        }
-    }
-    printf("\n");
-}
 
-__global__ static void print_a(int N, float *A) {
+__global__ static void print_a(int N, double *A) {
     printf("N: %d\n", N);
     for (int i = 0; i < 3 * 3 * N * N; i++) {
         printf("%8.5f ", A[i]);
@@ -65,17 +45,18 @@ __global__ static void print_a(int N, float *A) {
  * Method uses exponential polarization regardless of method requested in input
  * script
  */
-__global__ static void build_a(int N, float *A, const float damp, float3 *pos, float *pols, const int damp_type) {
+/*
+__global__ static void build_a(int N, double *A, const double damp, double3 *pos, double *pols, const int damp_type) {
     int i = blockIdx.x, j;
 
     if (i >= N)
         return;
 
-    float r, r2, r3, r5;
-    float expr, damping_term1, damping_term2;
-    float3 dr, dri, img;
+    double r, r2, r3, r5;
+    double expr, damping_term1, damping_term2;
+    double3 dr, dri, img;
 
-    float one_over_pol_i;
+    double one_over_pol_i;
 
     if (pols[i] == 0) {
         one_over_pol_i = INFINITY;
@@ -83,16 +64,16 @@ __global__ static void build_a(int N, float *A, const float damp, float3 *pos, f
         one_over_pol_i = 1.0 / pols[i];
     }
 
-    const float3 pos_i = pos[i];
-    const float3 recip_basis_0 = make_float3(recip_basis[0], recip_basis[1], recip_basis[2]);
-    const float3 recip_basis_1 = make_float3(recip_basis[3], recip_basis[4], recip_basis[5]);
-    const float3 recip_basis_2 = make_float3(recip_basis[6], recip_basis[7], recip_basis[8]);
-    const float3 basis_0 = make_float3(basis[0], basis[1], basis[2]);
-    const float3 basis_1 = make_float3(basis[3], basis[4], basis[5]);
-    const float3 basis_2 = make_float3(basis[6], basis[7], basis[8]);
+    const double3 pos_i = pos[i];
+    const double3 recip_basis_0 = make_double3(recip_basis[0], recip_basis[1], recip_basis[2]);
+    const double3 recip_basis_1 = make_double3(recip_basis[3], recip_basis[4], recip_basis[5]);
+    const double3 recip_basis_2 = make_double3(recip_basis[6], recip_basis[7], recip_basis[8]);
+    const double3 basis_0 = make_double3(basis[0], basis[1], basis[2]);
+    const double3 basis_1 = make_double3(basis[3], basis[4], basis[5]);
+    const double3 basis_2 = make_double3(basis[6], basis[7], basis[8]);
 
-    const float damp2 = damp * damp;
-    const float damp3 = damp2 * damp;
+    const double damp2 = damp * damp;
+    const double damp3 = damp2 * damp;
 
     const int N_per_thread = int(N - 0.5) / THREADS + 1;
     const int threadid = threadIdx.x;
@@ -195,14 +176,14 @@ __global__ static void build_a(int N, float *A, const float damp, float3 *pos, f
 
             // exploit symmetry
             A[9 * N * j + 3 * i] = dri.x * dri.x * damping_term2 + damping_term1;
-            const float tmp1 = dri.x * dri.y * damping_term2;
+            const double tmp1 = dri.x * dri.y * damping_term2;
             A[9 * N * j + 3 * i + 1] = tmp1;
-            const float tmp2 = dri.x * dri.z * damping_term2;
+            const double tmp2 = dri.x * dri.z * damping_term2;
             A[9 * N * j + 3 * i + 2] = tmp2;
             A[9 * N * j + 3 * i + 3 * N] = tmp1;
             A[9 * N * j + 3 * i + 3 * N + 1] =
                 dri.y * dri.y * damping_term2 + damping_term1;
-            const float tmp3 = dri.y * dri.z * damping_term2;
+            const double tmp3 = dri.y * dri.z * damping_term2;
             A[9 * N * j + 3 * i + 3 * N + 2] = tmp3;
             A[9 * N * j + 3 * i + 6 * N] = tmp2;
             A[9 * N * j + 3 * i + 6 * N + 1] = tmp3;
@@ -212,6 +193,7 @@ __global__ static void build_a(int N, float *A, const float damp, float3 *pos, f
     }
     return;
 }
+*/
 
 extern "C" {
 
@@ -220,6 +202,7 @@ extern "C" {
 #include <stdlib.h>
 #include <structs.h>
 #include <time.h>
+#include "function_prototypes.h"
 
     void thole_field(system_t *);
 
@@ -315,18 +298,18 @@ extern "C" {
         molecule_t *molecule_ptr;
         atom_t *atom_ptr;
         int i, j, iterations;
-        float potential = 0.0;
-        float alpha, beta, result;
+        double potential = 0.0;
+        double alpha, beta, result;
         int N = system->natoms;
-        float *host_x, *host_b, *host_basis, *host_recip_basis,
+        double *host_x, *host_b, *host_basis, *host_recip_basis,
               *host_pols; // host vectors
-        float3 *host_pos;
-        float *A;                                            // GPU matrix
-        float *x, *r, *z, *p, *tmp, *r_prev, *z_prev, *pols; // GPU vectors
-        float3 *pos;
-        const float one = 1.0; // these are for some CUBLAS calls
-        const float zero = 0.0;
-        const float neg_one = -1.0;
+        double3 *host_pos;
+        double *A;                                            // GPU matrix
+        double *x, *r, *z, *p, *tmp, *r_prev, *z_prev, *pols; // GPU vectors
+        double3 *pos;
+        const double one = 1.0; // these are for some CUBLAS calls
+        const double zero = 0.0;
+        const double neg_one = -1.0;
 
         cudaError_t error;     // GetDevice and cudaMalloc errors
         cudaDeviceProp prop;   // GetDevice properties
@@ -347,42 +330,35 @@ extern "C" {
         cublasErrorHandler(cublasCreate(&handle),
                 __LINE__); // initialize CUBLAS context
 
-        host_b = (float *)calloc(3 * N, sizeof(float)); // allocate all our arrays
-        host_x = (float *)calloc(3 * N, sizeof(float));
-        host_basis = (float *)calloc(9, sizeof(float));
-        host_recip_basis = (float *)calloc(9, sizeof(float));
-        host_pos = (float3 *)calloc(N, sizeof(float3));
-        host_pols = (float *)calloc(N, sizeof(float));
+        host_b = (double *)calloc(3 * N, sizeof(double)); // allocate all our arrays
+        host_x = (double *)calloc(3 * N, sizeof(double));
+        host_basis = (double *)calloc(9, sizeof(double));
+        host_recip_basis = (double *)calloc(9, sizeof(double));
+        host_pos = (double3 *)calloc(N, sizeof(double3));
+        host_pols = (double *)calloc(N, sizeof(double));
 
-        cudaErrorHandler(cudaMalloc((void **)&x, 3 * N * sizeof(float)), __LINE__);
-        cudaErrorHandler(cudaMalloc((void **)&A, 3 * N * 3 * N * sizeof(float)),
+        cudaErrorHandler(cudaMalloc((void **)&x, 3 * N * sizeof(double)), __LINE__);
+        cudaErrorHandler(cudaMalloc((void **)&A, 3 * N * 3 * N * sizeof(double)),
                 __LINE__);
-        cudaErrorHandler(cudaMalloc((void **)&r, 3 * N * sizeof(float)), __LINE__);
-        cudaErrorHandler(cudaMalloc((void **)&z, 3 * N * sizeof(float)), __LINE__);
-        cudaErrorHandler(cudaMalloc((void **)&p, 3 * N * sizeof(float)), __LINE__);
-        cudaErrorHandler(cudaMalloc((void **)&tmp, 3 * N * sizeof(float)), __LINE__);
-        cudaErrorHandler(cudaMalloc((void **)&r_prev, 3 * N * sizeof(float)),
+        cudaErrorHandler(cudaMalloc((void **)&r, 3 * N * sizeof(double)), __LINE__);
+        cudaErrorHandler(cudaMalloc((void **)&z, 3 * N * sizeof(double)), __LINE__);
+        cudaErrorHandler(cudaMalloc((void **)&p, 3 * N * sizeof(double)), __LINE__);
+        cudaErrorHandler(cudaMalloc((void **)&tmp, 3 * N * sizeof(double)), __LINE__);
+        cudaErrorHandler(cudaMalloc((void **)&r_prev, 3 * N * sizeof(double)),
                 __LINE__);
-        cudaErrorHandler(cudaMalloc((void **)&z_prev, 3 * N * sizeof(float)),
+        cudaErrorHandler(cudaMalloc((void **)&z_prev, 3 * N * sizeof(double)),
                 __LINE__);
-        cudaErrorHandler(cudaMalloc((void **)&pos, N * sizeof(float3)), __LINE__);
-        cudaErrorHandler(cudaMalloc((void **)&pols, N * sizeof(float)), __LINE__);
+        cudaErrorHandler(cudaMalloc((void **)&pos, N * sizeof(double3)), __LINE__);
+        cudaErrorHandler(cudaMalloc((void **)&pols, N * sizeof(double)), __LINE__);
 
         // copy over the basis matrix
         for (i = 0; i < 3; i++) {
             for (j = 0; j < 3; j++) {
-                host_basis[i * 3 + j] = (float)system->pbc->basis[j][i];
-                host_recip_basis[i * 3 + j] = (float)system->pbc->reciprocal_basis[j][i];
+                host_basis[i * 3 + j] = (double)system->pbc->basis[j][i];
+                host_recip_basis[i * 3 + j] = (double)system->pbc->reciprocal_basis[j][i];
             }
         }
 
-        cudaErrorHandler(cudaMemcpyToSymbol(basis, host_basis, 9 * sizeof(float), 0,
-                    cudaMemcpyHostToDevice),
-                __LINE__);
-        cudaErrorHandler(cudaMemcpyToSymbol(recip_basis, host_recip_basis,
-                    9 * sizeof(float), 0,
-                    cudaMemcpyHostToDevice),
-                __LINE__);
 
         thole_field(system); // calc static e-field
 
@@ -390,48 +366,42 @@ extern "C" {
                 molecule_ptr = molecule_ptr->next) {
             for (atom_ptr = molecule_ptr->atoms; atom_ptr;
                     atom_ptr = atom_ptr->next, i++) {
-                host_pos[i].x = (float)atom_ptr->pos[0];
-                host_pos[i].y = (float)atom_ptr->pos[1];
-                host_pos[i].z = (float)atom_ptr->pos[2];
+                host_pos[i].x = (double)atom_ptr->pos[0];
+                host_pos[i].y = (double)atom_ptr->pos[1];
+                host_pos[i].z = (double)atom_ptr->pos[2];
                 host_pols[i] = (atom_ptr->polarizability == 0.0)
                     ? 1.0f / MAXFVALUE
-                    : (float)atom_ptr->polarizability;
+                    : (double)atom_ptr->polarizability;
                 for (j = 0; j < 3; j++) {
                     host_b[3 * i + j] =
-                        (float)(atom_ptr->ef_static[j] + atom_ptr->ef_static_self[j]);
-                    host_x[3 * i + j] = (float)system->polar_gamma *
+                        (double)(atom_ptr->ef_static[j] + atom_ptr->ef_static_self[j]);
+                    host_x[3 * i + j] = (double)system->polar_gamma *
                         atom_ptr->polarizability * host_b[3 * i + j];
                 }
             }
         }
 
         cudaErrorHandler(
-                cudaMemcpy(pos, host_pos, N * sizeof(float3), cudaMemcpyHostToDevice),
+                cudaMemcpy(pos, host_pos, N * sizeof(double3), cudaMemcpyHostToDevice),
                 __LINE__); // copy over pos (to pos), b (to r), x (to x) and pols (to
                            // pols)
         cudaErrorHandler(
-                cudaMemcpy(r, host_b, 3 * N * sizeof(float), cudaMemcpyHostToDevice),
+                cudaMemcpy(r, host_b, 3 * N * sizeof(double), cudaMemcpyHostToDevice),
                 __LINE__);
         cudaErrorHandler(
-                cudaMemcpy(x, host_x, 3 * N * sizeof(float), cudaMemcpyHostToDevice),
+                cudaMemcpy(x, host_x, 3 * N * sizeof(double), cudaMemcpyHostToDevice),
                 __LINE__);
         cudaErrorHandler(
-                cudaMemcpy(pols, host_pols, N * sizeof(float), cudaMemcpyHostToDevice),
+                cudaMemcpy(pols, host_pols, N * sizeof(double), cudaMemcpyHostToDevice),
                 __LINE__);
 
         // make A matrix on GPU
-        build_a<<<N, THREADS>>>(N, A, system->polar_damp, pos, pols, system->damp_type);
-        /*
-        printf("polar a matrix\n");
-        print_a<<<1, 1>>>(N, A);
-        cudaDeviceSynchronize();
-        printf("\n\n\n\n");
-        */
+        init_A_matrix(system);
         cudaErrorHandler(cudaGetLastError(), __LINE__ - 1);
 
         // R = B - A*X0
         // note r is initially set to b a couple lines above
-        cublasErrorHandler(cublasSgemv(handle, CUBLAS_OP_N, 3 * N, 3 * N, &neg_one, A,
+        cublasErrorHandler(cublasDgemv(handle, CUBLAS_OP_N, 3 * N, 3 * N, &neg_one, A,
                     3 * N, x, 1, &one, r, 1),
                 __LINE__);
 
@@ -440,32 +410,32 @@ extern "C" {
         cudaErrorHandler(cudaGetLastError(), __LINE__ - 1);
 
         // P = Z
-        cublasErrorHandler(cublasScopy(handle, 3 * N, z, 1, p, 1), __LINE__);
+        cublasErrorHandler(cublasDcopy(handle, 3 * N, z, 1, p, 1), __LINE__);
 
         // This line was used for testing cuda cdvdw in hkust to prevent some non-NAN polarization values
         //system->polar_max_iter = 0;
         
         for (iterations = 0; iterations < system->polar_max_iter; iterations++) {
             // alpha = R^tZ/P^tAP
-            cublasErrorHandler(cublasSdot(handle, 3 * N, r, 1, z, 1, &alpha), __LINE__);
-            cublasErrorHandler(cublasSgemv(handle, CUBLAS_OP_N, 3 * N, 3 * N, &one, A,
+            cublasErrorHandler(cublasDdot(handle, 3 * N, r, 1, z, 1, &alpha), __LINE__);
+            cublasErrorHandler(cublasDgemv(handle, CUBLAS_OP_N, 3 * N, 3 * N, &one, A,
                         3 * N, p, 1, &zero, tmp, 1),
                     __LINE__);
-            cublasErrorHandler(cublasSdot(handle, 3 * N, p, 1, tmp, 1, &result),
+            cublasErrorHandler(cublasDdot(handle, 3 * N, p, 1, tmp, 1, &result),
                     __LINE__);
             alpha /= result;
 
             // X = X + alpha*P
-            cublasErrorHandler(cublasSaxpy(handle, 3 * N, &alpha, p, 1, x, 1),
+            cublasErrorHandler(cublasDaxpy(handle, 3 * N, &alpha, p, 1, x, 1),
                     __LINE__);
 
-            // save old R, Z
-            cublasErrorHandler(cublasScopy(handle, 3 * N, r, 1, r_prev, 1), __LINE__);
-            cublasErrorHandler(cublasScopy(handle, 3 * N, z, 1, z_prev, 1), __LINE__);
+            // save old R, D
+            cublasErrorHandler(cublasDcopy(handle, 3 * N, r, 1, r_prev, 1), __LINE__);
+            cublasErrorHandler(cublasDcopy(handle, 3 * N, z, 1, z_prev, 1), __LINE__);
 
             // R = R - alpha*AP
             alpha *= -1;
-            cublasErrorHandler(cublasSaxpy(handle, 3 * N, &alpha, tmp, 1, r, 1),
+            cublasErrorHandler(cublasDaxpy(handle, 3 * N, &alpha, tmp, 1, r, 1),
                     __LINE__);
 
             // Z = M^-1*R
@@ -473,20 +443,20 @@ extern "C" {
             cudaErrorHandler(cudaGetLastError(), __LINE__ - 1);
 
             // beta = Z^tR/Z_prev^tR_prev
-            cublasErrorHandler(cublasSdot(handle, 3 * N, z, 1, r, 1, &beta), __LINE__);
-            cublasErrorHandler(cublasSdot(handle, 3 * N, z_prev, 1, r_prev, 1, &result),
+            cublasErrorHandler(cublasDdot(handle, 3 * N, z, 1, r, 1, &beta), __LINE__);
+            cublasErrorHandler(cublasDdot(handle, 3 * N, z_prev, 1, r_prev, 1, &result),
                     __LINE__);
             beta /= result;
 
             // P = Z + beta*P
-            cublasErrorHandler(cublasScopy(handle, 3 * N, z, 1, tmp, 1), __LINE__);
-            cublasErrorHandler(cublasSaxpy(handle, 3 * N, &beta, p, 1, tmp, 1),
+            cublasErrorHandler(cublasDcopy(handle, 3 * N, z, 1, tmp, 1), __LINE__);
+            cublasErrorHandler(cublasDaxpy(handle, 3 * N, &beta, p, 1, tmp, 1),
                     __LINE__);
-            cublasErrorHandler(cublasScopy(handle, 3 * N, tmp, 1, p, 1), __LINE__);
+            cublasErrorHandler(cublasDcopy(handle, 3 * N, tmp, 1, p, 1), __LINE__);
         }
 
         cudaErrorHandler(
-                cudaMemcpy(host_x, x, 3 * N * sizeof(float), cudaMemcpyDeviceToHost),
+                cudaMemcpy(host_x, x, 3 * N * sizeof(double), cudaMemcpyDeviceToHost),
                 __LINE__);
 
         potential = 0.0;

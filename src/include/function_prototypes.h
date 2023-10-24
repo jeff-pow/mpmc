@@ -215,6 +215,7 @@ int are_we_done_yet(system_t *, int);
 #ifdef CUDA
 void *polar_cuda(void *);
 void *vdw_cuda(void *);
+double *init_A_matrix(void *);
 #endif /* CUDA */
 
 /* linear algebra - VDW */
