@@ -235,4 +235,8 @@ double *init_A_matrix(void *systemptr) {
 
     return device_A_matrix;
 }
+
+void clean_up_cuda_a(double *a_matrix) {
+    cudaFree(a_matrix);
+}
 }

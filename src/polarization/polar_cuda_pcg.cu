@@ -396,7 +396,8 @@ extern "C" {
                 __LINE__);
 
         // make A matrix on GPU
-        init_A_matrix(system);
+        // build_a_matrix(system);
+    //build_a_matrix<<<N, THREADS>>>(N, A, system->polar_damp, pos, pols, system->damp_type);
         cudaErrorHandler(cudaGetLastError(), __LINE__ - 1);
 
         // R = B - A*X0
