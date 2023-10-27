@@ -1,4 +1,4 @@
-#include "cuda_functions.cuh"
+#include "cuda_functions.h"
 #include "defines.h"
 #include <cuda_runtime.h>
 #include <cuda.h>
@@ -7,7 +7,7 @@ __constant__ double basis[9];
 __constant__ double recip_basis[9];
 
 
-__global__ void build_a(int N, double *A, const double damp, double3 *pos, double *pols, int damp_type) {
+__global__ void build_a_matrix(int N, double *A, const double damp, double3 *pos, double *pols, int damp_type) {
     int i = blockIdx.x, j;
 
     if (i >= N)
@@ -210,7 +210,7 @@ double *init_A_matrix(void *systemptr) {
     (cudaMemcpy(device_pols, host_pols, N * sizeof(double), cudaMemcpyHostToDevice));
     cudaDeviceSynchronize();
 
-    build_a<<<N, THREADS>>>(N, device_A_matrix, system->polar_damp, device_pos, device_pols, system->damp_type);
+    build_a_matrix<<<N, THREADS>>>(N, device_A_matrix, system->polar_damp, device_pos, device_pols, system->damp_type);
     cudaDeviceSynchronize();
 
     for (i = 0; i < N; i++) {

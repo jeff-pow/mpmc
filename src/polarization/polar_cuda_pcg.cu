@@ -11,7 +11,7 @@
 #include <cuda_runtime.h>
 #include <stdio.h>
 #include <defines.h>
-#include "cuda_functions.cuh"
+#include "cuda_functions.h"
 
 
 
@@ -397,7 +397,7 @@ extern "C" {
 
         // make A matrix on GPU
         // build_a_matrix(system);
-    //build_a_matrix<<<N, THREADS>>>(N, A, system->polar_damp, pos, pols, system->damp_type);
+        build_a_matrix<<<N, THREADS>>>(N, A, system->polar_damp, pos, pols, system->damp_type);
         cudaErrorHandler(cudaGetLastError(), __LINE__ - 1);
 
         // R = B - A*X0

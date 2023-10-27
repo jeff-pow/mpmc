@@ -1,5 +1,8 @@
 #include <cuda_runtime.h>
 
+#ifndef CUDA_FUNCTIONS_H
+#define CUDA_FUNCTIONS_H
+
 
 // This resulted in the same times across 64, 128, 256, and 512. I just went with a middle ground...
 #define THREADS 128
@@ -10,3 +13,5 @@
 #define TWOoverHBAR 2.6184101e11    //K^-1 s^-1
 
 __global__ void build_a_matrix(int, double *, const double, double3 *, double *, int);
+
+#endif // CUDA_FUNCTIONS_H

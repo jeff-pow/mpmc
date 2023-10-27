@@ -8,7 +8,7 @@
 #include <stdio.h>
 #include <cuda.h>
 #include <defines.h>
-#include "cuda_functions.cuh"
+#include "cuda_functions.h"
 
 __global__ static void build_c(int N, double *A, double *omegas, double *pols, double *C, int dim) {
     int i = blockIdx.x * blockDim.x + threadIdx.x;
@@ -98,6 +98,7 @@ extern "C" {
 #include "defines.h"
 #include "structs.h"
 #include "mc.h"
+#include "cuda_functions.h"
 
 //only run dsyev from LAPACK if compiled with -llapack, otherwise report an error
 #ifdef VDW
@@ -561,6 +562,9 @@ void *vdw_cuda(void *systemptr) {
 
     device_A_matrix = init_A_matrix(system);
     print_a<<<1, 1>>>(N, device_A_matrix);
+
+    build_a_matrix<<<N, THREADS>>>(N, device_A_matrix, system->polar_damp, device_pos, device_pols, system->damp_type);
+    cudaDeviceSynchronize();
     exit(0);
     //build_a_matrix<<<N, THREADS>>>(N, device_A_matrix, system->polar_damp, device_pos, device_pols, system->damp_type);
     cudaDeviceSynchronize();
