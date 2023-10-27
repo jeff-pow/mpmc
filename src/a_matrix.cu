@@ -225,7 +225,6 @@ double *init_A_matrix(void *systemptr) {
     free(host_recip_basis);
     free(host_pos);
     free(host_pols);
-    (cudaFree(device_A_matrix));
     (cudaFree(device_omegas));
     (cudaFree(device_pols));
     (cudaFree(device_pos));

@@ -530,7 +530,7 @@ void *vdw_cuda(void *systemptr) {
     double3 *device_pos;
     cudaErrorHandler(cudaMalloc((void **)&device_pols, N * sizeof(double)), __LINE__);
     cudaErrorHandler(cudaMalloc((void **)&device_pos, N * sizeof(double3)), __LINE__);
-    //cudaErrorHandler(cudaMalloc((void **)&device_A_matrix, matrix_size * sizeof(double)), __LINE__);
+    cudaErrorHandler(cudaMalloc((void **)&device_A_matrix, matrix_size * sizeof(double)), __LINE__);
     cudaErrorHandler(cudaMalloc((void **)&device_omegas, N * sizeof(double)), __LINE__);
     cudaErrorHandler(cudaMalloc(&device_C_matrix, matrix_size * sizeof(double)), __LINE__);
     cudaDeviceSynchronize();
@@ -561,9 +561,9 @@ void *vdw_cuda(void *systemptr) {
     cudaDeviceSynchronize();
 
     device_A_matrix = init_A_matrix(system);
-    print_a<<<1, 1>>>(N, device_A_matrix);
 
-    build_a_matrix<<<N, THREADS>>>(N, device_A_matrix, system->polar_damp, device_pos, device_pols, system->damp_type);
+    //build_a_matrix<<<N, THREADS>>>(N, device_A_matrix, system->polar_damp, device_pos, device_pols, system->damp_type);
+    print_a<<<1, 1>>>(N, device_A_matrix);
     cudaDeviceSynchronize();
     exit(0);
     //build_a_matrix<<<N, THREADS>>>(N, device_A_matrix, system->polar_damp, device_pos, device_pols, system->damp_type);

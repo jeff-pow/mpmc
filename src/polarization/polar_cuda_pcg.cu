@@ -41,159 +41,6 @@ __global__ static void print_a(int N, double *A) {
     printf("\n");
 }
 
-/**
- * Method uses exponential polarization regardless of method requested in input
- * script
- */
-/*
-__global__ static void build_a(int N, double *A, const double damp, double3 *pos, double *pols, const int damp_type) {
-    int i = blockIdx.x, j;
-
-    if (i >= N)
-        return;
-
-    double r, r2, r3, r5;
-    double expr, damping_term1, damping_term2;
-    double3 dr, dri, img;
-
-    double one_over_pol_i;
-
-    if (pols[i] == 0) {
-        one_over_pol_i = INFINITY;
-    } else {
-        one_over_pol_i = 1.0 / pols[i];
-    }
-
-    const double3 pos_i = pos[i];
-    const double3 recip_basis_0 = make_double3(recip_basis[0], recip_basis[1], recip_basis[2]);
-    const double3 recip_basis_1 = make_double3(recip_basis[3], recip_basis[4], recip_basis[5]);
-    const double3 recip_basis_2 = make_double3(recip_basis[6], recip_basis[7], recip_basis[8]);
-    const double3 basis_0 = make_double3(basis[0], basis[1], basis[2]);
-    const double3 basis_1 = make_double3(basis[3], basis[4], basis[5]);
-    const double3 basis_2 = make_double3(basis[6], basis[7], basis[8]);
-
-    const double damp2 = damp * damp;
-    const double damp3 = damp2 * damp;
-
-    const int N_per_thread = int(N - 0.5) / THREADS + 1;
-    const int threadid = threadIdx.x;
-    const int threadid_plus_one = threadIdx.x + 1;
-    for (j = threadid * N_per_thread; j < threadid_plus_one * N_per_thread && j < N; j++) {
-        if (i == j) {
-            A[9 * N * j + 3 * i] = one_over_pol_i;
-            A[9 * N * j + 3 * i + 3 * N + 1] = one_over_pol_i;
-            A[9 * N * j + 3 * i + 6 * N + 2] = one_over_pol_i;
-            A[9 * N * j + 3 * i + 1] = 0.0;
-            A[9 * N * j + 3 * i + 2] = 0.0;
-            A[9 * N * j + 3 * i + 3 * N] = 0.0;
-            A[9 * N * j + 3 * i + 3 * N + 2] = 0.0;
-            A[9 * N * j + 3 * i + 6 * N] = 0.0;
-            A[9 * N * j + 3 * i + 6 * N + 1] = 0.0;
-        } else {
-            // START MINIMUM IMAGE
-            // get the particle displacement
-            dr.x = pos_i.x - pos[j].x;
-            dr.y = pos_i.y - pos[j].y;
-            dr.z = pos_i.z - pos[j].z;
-
-            // matrix multiply with the inverse basis and round
-            img.x = recip_basis_0.x * dr.x + recip_basis_0.y * dr.y +
-                recip_basis_0.z * dr.z;
-            img.y = recip_basis_1.x * dr.x + recip_basis_1.y * dr.y +
-                recip_basis_1.z * dr.z;
-            img.z = recip_basis_2.x * dr.x + recip_basis_2.y * dr.y +
-                recip_basis_2.z * dr.z;
-            img.x = rintf(img.x);
-            img.y = rintf(img.y);
-            img.z = rintf(img.z);
-
-            // matrix multiply to project back into our basis
-            dri.x = basis_0.x * img.x + basis_0.y * img.y + basis_0.z * img.z;
-            dri.y = basis_1.x * img.x + basis_1.y * img.y + basis_1.z * img.z;
-            dri.z = basis_2.x * img.x + basis_2.y * img.y + basis_2.z * img.z;
-
-            // now correct the displacement
-            dri.x = dr.x - dri.x;
-            dri.y = dr.y - dri.y;
-            dri.z = dr.z - dri.z;
-            r2 = dri.x * dri.x + dri.y * dri.y + dri.z * dri.z;
-
-            // various powers of r that we need
-            r = sqrtf(r2);
-            r3 = r2 * r;
-            r5 = r3 * r2;
-            r3 = 1.0f / r3;
-            r5 = 1.0f / r5;
-            // END MINIMUM IMAGE
-
-
-            switch (damp_type) {
-                case DAMPING_EXPONENTIAL_UNSCALED: {
-                    // damping terms
-                    expr = exp(-damp * r);
-                    damping_term1 = 1.0f - expr * (0.5f * damp2 * r2 + damp * r + 1.0f);
-                    damping_term2 = 1.0f - expr * (damp3 * r * r2 / 6.0f + 0.5f * damp2 * r2 +
-                        damp * r + 1.0f);
-
-                    break;
-                }
-                case DAMPING_AMOEBA: {
-                    double l = damp;
-                    double u;
-                    if (pols[i] * pols[j] == 0) {
-                        u = r;
-                    } else {
-                        u = r / pow(pols[i] * pols[j], 1 / 6.0);
-                    }
-                    double u3 = u * u * u;
-                    double explr = exp(-l * u3);
-                    damping_term1 = 1 - explr;
-                    damping_term2 = 1 - (1 + l * u3) * explr;
-
-                    break;
-                }
-                default: { // Damping exponential with corrections
-                    double l = damp;
-                    double l2 = l * l;
-                    double l3 = l * l * l;
-                    double u;
-                    if (pols[i] * pols[j] == 0) {
-                        u = r;
-                    } else {
-                        u = r / pow(pols[i] * pols[j], 1 / 6.0);
-                    }
-                    double explr = exp(-l * u);
-                    damping_term1 = 1.0 - explr * (.5 * l2 * u * u + l * u + 1.0);
-                    damping_term2 = damping_term1 - explr * (l3 * u * u * u / 6.0);
-
-                    break;
-                }
-            }
-
-            damping_term1 *= r3;
-            damping_term2 *= -3.0f * r5;
-
-
-            // exploit symmetry
-            A[9 * N * j + 3 * i] = dri.x * dri.x * damping_term2 + damping_term1;
-            const double tmp1 = dri.x * dri.y * damping_term2;
-            A[9 * N * j + 3 * i + 1] = tmp1;
-            const double tmp2 = dri.x * dri.z * damping_term2;
-            A[9 * N * j + 3 * i + 2] = tmp2;
-            A[9 * N * j + 3 * i + 3 * N] = tmp1;
-            A[9 * N * j + 3 * i + 3 * N + 1] =
-                dri.y * dri.y * damping_term2 + damping_term1;
-            const double tmp3 = dri.y * dri.z * damping_term2;
-            A[9 * N * j + 3 * i + 3 * N + 2] = tmp3;
-            A[9 * N * j + 3 * i + 6 * N] = tmp2;
-            A[9 * N * j + 3 * i + 6 * N + 1] = tmp3;
-            A[9 * N * j + 3 * i + 6 * N + 2] =
-                dri.z * dri.z * damping_term2 + damping_term1;
-        }
-    }
-    return;
-}
-*/
 
 extern "C" {
 
@@ -202,7 +49,10 @@ extern "C" {
 #include <stdlib.h>
 #include <structs.h>
 #include <time.h>
-#include "function_prototypes.h"
+#include "defines.h"
+#include "structs.h"
+#include "mc.h"
+#include "cuda_functions.h"
 
     void thole_field(system_t *);
 
@@ -397,7 +247,8 @@ extern "C" {
 
         // make A matrix on GPU
         // build_a_matrix(system);
-        build_a_matrix<<<N, THREADS>>>(N, A, system->polar_damp, pos, pols, system->damp_type);
+        //build_a_matrix<<<N, THREADS>>>(N, A, system->polar_damp, pos, pols, system->damp_type);
+        A = init_A_matrix(system);
         cudaErrorHandler(cudaGetLastError(), __LINE__ - 1);
 
         // R = B - A*X0
