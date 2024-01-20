@@ -29,6 +29,10 @@ __global__ static void build_c(int N, double *a, double *omegas, double *pols, d
         sqrt(omegas[row] * omegas[col]);
 }
 
+__global__ static void p(double* a) {
+    printf("%f\n", a[0]);
+}
+
 __global__
 static void print_basis_sets() {
     for (int i = 0; i < 3 * 3; i++) {
@@ -686,8 +690,12 @@ static double lr_vdw_corr(system_t *system) {
     return corr;
 }
 
-void vdw_cuda(system_t *system) {
+void vdw_cuda(cuda_args* args) {
     //system_t *system = (system_t *)systemptr;
+    system_t* system = args->system;
+    double* test_mtx = args->device_A_matrix;
+    //printf("test a: %f\n", test_mtx[0]);
+    p<<<1, 1>>>(test_mtx);
     int N = system->natoms;
     int matrix_size = 3 * 3 * N * N;
     int dim = 3 * N;

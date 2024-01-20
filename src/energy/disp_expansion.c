@@ -161,6 +161,7 @@ double disp_expansion(system_t *system) {
         {
             if (system->cuda == 1)
             {
+                printf("bad\n");
                 vdw_cuda(system);
                 potential += system->observables->vdw_energy;
                 system->observables->vdw_energy = 0;
@@ -240,6 +241,7 @@ double disp_expansion_nopbc(system_t *system) {
         {
             if (system->cuda == 1)
             {
+                printf("bad\n");
                 vdw_cuda(system);
                 potential += system->observables->vdw_energy;
             }

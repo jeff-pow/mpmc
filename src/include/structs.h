@@ -496,4 +496,9 @@ typedef struct _system {
 
 } system_t;
 
+typedef struct _cuda_args {
+    system_t* system;
+    double* device_A_matrix;
+} cuda_args;
+
 #endif

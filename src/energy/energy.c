@@ -105,9 +105,16 @@ double energy(system_t *system) {
 #ifdef CUDA
         pthread_t cuda_worker;
         pthread_t vdw_worker;
+        double* device_A_matrix;
 #endif
         if (!(system->sg || system->rd_only) && system->polarization) {
 #ifdef CUDA
+
+            device_A_matrix       = calc_a_matrix(system);
+            cuda_args *args       = calloc(1, sizeof(cuda_args));
+            args->system          = system;
+            args->device_A_matrix = device_A_matrix;
+
             if (system->cuda) {
                 int rc = pthread_create(&cuda_worker, NULL, polar_cuda, (void *)system);
                 if (rc) {
@@ -124,7 +131,7 @@ double energy(system_t *system) {
                 ;
             }
             else if (system->cuda && system->polarvdw) {
-                int vdw_status = pthread_create(&vdw_worker, NULL, vdw_cuda, (void *)system);
+                int vdw_status = pthread_create(&vdw_worker, NULL, vdw_cuda, (void *)args);
                 if (vdw_status) {
                     printf("Error in creating VDW cuda thread\n");
                     exit(-1);
@@ -192,6 +199,7 @@ double energy(system_t *system) {
             pthread_join(vdw_worker, NULL);
             vdw_energy = system->observables->vdw_energy;
         }
+        free_a_matrix(device_A_matrix);
 #endif
     }  // end if cavity_autoreject_absolute did not find bad match. (if potential==0)
     else {
