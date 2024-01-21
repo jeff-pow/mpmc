@@ -543,7 +543,10 @@ double calc_multi_configurational_energy(system_t *system) {
 #ifdef CUDA
         if (system->cuda)
         {
-            polar_cuda(system);
+            double* device_A_matrix = calc_a_matrix(system);
+            cuda_args args = { system, device_A_matrix };
+            polar_cuda(&args);
+            free_a_matrix(device_A_matrix);
             polar_energy = system->observables->polarization_energy;
         }
         else

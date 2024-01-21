@@ -1,4 +1,3 @@
-#include "structs.h"
 #include <mc.h>
 
 //Copyright 2013-2019 Adam Hogan
@@ -165,6 +164,7 @@ double disp_expansion(system_t *system) {
                 double* device_A_matrix = calc_a_matrix(system);
                 cuda_args args = { system, device_A_matrix };
                 vdw_cuda(&args);
+                free_a_matrix(device_A_matrix);
                 potential += system->observables->vdw_energy;
                 system->observables->vdw_energy = 0;
             }
@@ -246,6 +246,7 @@ double disp_expansion_nopbc(system_t *system) {
                 double* device_A_matrix = calc_a_matrix(system);
                 cuda_args args = { system, device_A_matrix };
                 vdw_cuda(&args);
+                free_a_matrix(device_A_matrix);
                 potential += system->observables->vdw_energy;
             }
             else

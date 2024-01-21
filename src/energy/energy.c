@@ -116,7 +116,7 @@ double energy(system_t *system) {
             args->device_A_matrix = device_A_matrix;
 
             if (system->cuda) {
-                int rc = pthread_create(&cuda_worker, NULL, polar_cuda, (void *)system);
+                int rc = pthread_create(&cuda_worker, NULL, polar_cuda, (void *)args);
                 if (rc) {
                     printf("ERROR; return code from pthread_create() is %d\n", rc);
                     exit(-1);
@@ -277,7 +277,10 @@ double energy_no_observables(system_t *system) {
 #ifdef CUDA
 
             if (system->cuda) {
+                double* device_A_matrix = calc_a_matrix(system);
+                cuda_args args = { system, device_A_matrix };
                 polar_cuda(system);
+                free_a_matrix(device_A_matrix);
                 polar_energy = system->observables->polarization_energy;
             } else
                 polar_energy = polar(system);

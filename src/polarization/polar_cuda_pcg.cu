@@ -309,8 +309,9 @@ extern "C" {
         }
     }
 
-    void *polar_cuda(void *ptr) {
-        system_t *system = (system_t *)ptr;
+    void *polar_cuda(cuda_args* args) {
+        system_t *system = args->system;
+        double* device_A_matrix = args->device_A_matrix;
         molecule_t *molecule_ptr;
         atom_t *atom_ptr;
         int i, j, iterations;
