@@ -272,6 +272,15 @@ __global__ static void print_matrix(int dim, double *A) {
 }
 
 
+__global__ static void matrix_eq(double* x, double* y, const int size) {
+    const int i = threadIdx.x;
+    if (i >= size) {
+        return;
+    }
+    if (x[i] != y[i]) {
+        printf("Bruh: %f != %f @ %d\n", x[i], y[i], i);
+    }
+}
 
 extern "C" {
 
@@ -691,10 +700,8 @@ static double lr_vdw_corr(system_t *system) {
 }
 
 void vdw_cuda(cuda_args* args) {
-    //system_t *system = (system_t *)systemptr;
     system_t* system = args->system;
     double* test_mtx = args->device_A_matrix;
-    //printf("test a: %f\n", test_mtx[0]);
     p<<<1, 1>>>(test_mtx);
     int N = system->natoms;
     int matrix_size = 3 * 3 * N * N;
@@ -748,6 +755,7 @@ void vdw_cuda(cuda_args* args) {
     cudaDeviceSynchronize();
 
     build_a<<<N, THREADS>>>(N, device_A_matrix, system->polar_damp, device_pos, device_pols, system->damp_type);
+    matrix_eq<<<N, THREADS>>>(device_A_matrix, test_mtx, matrix_size);
     cudaDeviceSynchronize();
     cudaErrorHandler(cudaGetLastError(), __LINE__ - 1);
 
@@ -840,4 +848,5 @@ void vdw_cuda(cuda_args* args) {
     system->observables->vdw_energy = energy;
 }
 }
+
 
